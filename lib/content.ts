@@ -24,7 +24,8 @@ export const nav = [
   { label: "Contact", href: "#contact" },
 ];
 
-export type ProjectVisual = "research-agent" | "invoice-pipeline" | "screenshot";
+// Each project has its own authored motion moment, so each has its own visual kind.
+export type ProjectVisual = "research-agent" | "invoice-pipeline" | "counter-tilt" | "mosaic";
 
 export type Project = {
   id: string;
@@ -36,6 +37,8 @@ export type Project = {
   role: string;
   tech: string[];
   result: string;
+  /** A short phrase inside `result` that gets the blue selection sweep. */
+  highlight: string;
   href?: string; // TODO: live/demo links
   hrefLabel?: string;
   visual: ProjectVisual;
@@ -54,6 +57,7 @@ export const projects: Project[] = [
     role: "Workflow design, build",
     tech: ["n8n", "Ollama", "Agentic workflows", "Prompt engineering"],
     result: "Multi-step agentic orchestration that runs without hand-holding.",
+    highlight: "agentic orchestration",
     visual: "research-agent",
   },
   {
@@ -66,6 +70,7 @@ export const projects: Project[] = [
     role: "Automation design, build",
     tech: ["n8n", "Groq API", "OCR", "Google Drive"],
     result: "A production-shaped document pipeline built from n8n and an LLM API.",
+    highlight: "document pipeline",
     visual: "invoice-pipeline",
   },
   {
@@ -79,7 +84,8 @@ export const projects: Project[] = [
     role: "Product, UX, full-stack",
     tech: ["Next.js", "Supabase", "Prisma", "TypeScript"], // TODO: confirm stack
     result: "Deployed and in real use: a revenue-relevant product for small businesses.",
-    visual: "screenshot",
+    highlight: "revenue-relevant product",
+    visual: "counter-tilt",
     image: "/projects/billzy.png",
   },
   {
@@ -91,7 +97,8 @@ export const projects: Project[] = [
     role: "Solo: design, build, curation",
     tech: ["Next.js", "Supabase", "Tailwind CSS"], // TODO: confirm stack
     result: "200+ tools catalogued, from data model to daily upkeep.",
-    visual: "screenshot",
+    highlight: "200+ tools",
+    visual: "mosaic",
     image: "/projects/kiro.png",
   },
 ];

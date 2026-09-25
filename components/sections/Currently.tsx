@@ -17,20 +17,20 @@ export function Currently() {
     <section
       id="currently"
       aria-labelledby="currently-title"
-      className="border-t border-line px-6 py-16 md:px-12 md:py-20"
+      className="border-t border-line bg-bg px-4 py-16 md:px-12 md:py-20"
     >
-      <h2 id="currently-title" className="display mb-10 text-3xl">
+      <h2 id="currently-title" className="display mb-10 text-3xl [--wght:700]">
         Currently
       </h2>
       <dl className="grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
         {items.map((it) => (
           <div key={it.k}>
-            <dt className="label mb-2 text-cream-dim">{it.k}</dt>
+            <dt className="label mb-2 text-muted">{it.k}</dt>
             <dd className="text-lg leading-snug">{it.v}</dd>
           </div>
         ))}
         <div>
-          <dt className="label mb-2 text-cream-dim">Local time</dt>
+          <dt className="label mb-2 text-muted">Local time</dt>
           <dd className="text-lg tabular-nums" suppressHydrationWarning>
             {time ? `${time.toUpperCase()}, ${site.location}` : "\u2014"}
           </dd>

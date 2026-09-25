@@ -58,8 +58,14 @@ planned future addition. Not in this initial build.)*
   keep Lighthouse scores healthy despite the animation load.
 - Typography-led design — confident type scale, generous whitespace, let the 4 projects be
   the visual centerpiece rather than decorative clutter.
-- Dark-leaning or bold color direction fits the "bold & animated" brief — final palette to be
-  decided during build, but should feel premium, not generic SaaS-template.
+- **Direction (updated 2026-09-25): light, not dark.** White background, near-black text, ONE vibrant
+  blue accent (`#0038FF`) used sparingly (primary CTA, links, focus, one selection-sweep per section,
+  the active pipeline stage). Bricolage Grotesque (variable wght/wdth) for display, Instrument Sans
+  for body. Because light + blue + bold sans is a common SaaS look, the motion is the differentiator:
+  "type is a live material" (weight/width animate with scroll and pointer) plus a scroll-choreographed
+  OGL caustics shader (`components/LightField.tsx`). Never put black on the blue (2.84:1); links are
+  underlined. Every effect needs a static reduced-motion fallback, and expensive ones are gated in
+  `lib/capability.ts`. Full rationale: the plan in the redesign session; tokens live in `app/globals.css`.
 
 ## Build Order
 1. Scaffold Next.js + TypeScript + Tailwind, set up Lenis + GSAP/ScrollTrigger + Framer Motion.

@@ -45,7 +45,7 @@ export function Cursor() {
     <div
       ref={ring}
       aria-hidden
-      className="pointer-events-none fixed left-0 top-0 z-[70] h-4 w-4 rounded-full border border-cream/70 opacity-0"
+      className="pointer-events-none fixed left-0 top-0 z-[70] h-4 w-4 rounded-full border border-white mix-blend-difference opacity-0"
     />
   );
 }

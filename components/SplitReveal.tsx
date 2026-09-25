@@ -34,9 +34,12 @@ export function SplitReveal({
       const mm = gsap.matchMedia();
       mm.add(MOTION_OK, () => {
         const inner = gsap.utils.toArray<HTMLElement>("[data-inner]", root.current);
-        gsap.set(inner, { yPercent: 115 });
+        // y: 0 too, so a stale px offset parsed from an earlier inline transform (strict-mode re-run)
+        // can never add to the percentage
+        gsap.set(inner, { y: 0, yPercent: 115 });
         if (trigger === "manual") return;
         gsap.to(inner, {
+          y: 0,
           yPercent: 0,
           duration: 1.1,
           ease: "power4.out",

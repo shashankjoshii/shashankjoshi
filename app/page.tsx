@@ -13,7 +13,7 @@ export default function Home() {
     <>
       <a
         href="#work"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[90] focus:bg-gold focus:px-4 focus:py-2 focus:text-ink"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[90] focus:bg-accent focus:px-4 focus:py-2 focus:text-white"
       >
         Skip to work
       </a>
@@ -22,8 +22,8 @@ export default function Home() {
       <main id="main">
         <Hero />
         <div id="work">
-          {projects.map((p) => (
-            <ProjectSection key={p.id} project={p} />
+          {projects.map((p, i) => (
+            <ProjectSection key={p.id} project={p} index={i} total={projects.length} prevId={projects[i - 1]?.id} />
           ))}
         </div>
         <Process />

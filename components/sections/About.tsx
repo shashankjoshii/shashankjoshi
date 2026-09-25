@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { gsap, useGSAP, MOTION_OK } from "@/lib/gsap";
 import { about } from "@/lib/content";
+import { SelectionSweep } from "../SelectionSweep";
 
 export function About() {
   const root = useRef<HTMLElement>(null);
@@ -35,9 +36,9 @@ export function About() {
     <section
       id="about"
       ref={root}
-      className="border-t border-line px-6 py-32 md:px-12 md:py-48"
+      className="bg-bg px-4 py-32 md:px-12 md:py-48"
     >
-      <h2 className="about-statement display max-w-6xl text-[clamp(1.9rem,4.6vw,4.4rem)] leading-[1.08]">
+      <h2 className="about-statement display max-w-6xl [--wght:600] text-[clamp(1.9rem,4.6vw,4.4rem)] leading-[1.08]">
         {about.statement.split(" ").map((w, i) => (
           <span key={i} className="about-word">
             {w}{" "}
@@ -47,12 +48,12 @@ export function About() {
 
       <div className="about-clusters mt-24 grid gap-14 sm:grid-cols-2 md:mt-32 lg:grid-cols-4 lg:gap-8">
         {about.clusters.map((c) => (
-          <div key={c.title} className="border-t border-cream/25 pt-6">
-            <h3 className="display text-[clamp(1.7rem,2.5vw,2.3rem)] leading-none">{c.title}</h3>
-            <p className="mt-3 text-sm text-cream-dim">{c.note}</p>
-            <ul className="mt-6 space-y-1.5 text-lg text-cream-dim">
+          <div key={c.title} className="border-t border-fg pt-6">
+            <h3 className="display text-[clamp(1.7rem,2.5vw,2.3rem)] leading-none">{c.title === "AI & Automation" ? <SelectionSweep>{c.title}</SelectionSweep> : c.title}</h3>
+            <p className="mt-3 text-sm text-muted">{c.note}</p>
+            <ul className="mt-6 space-y-1.5 text-lg text-muted">
               {c.items.map((item) => (
-                <li key={item} className="transition-colors hover:text-cream">
+                <li key={item} className="transition-colors hover:text-fg">
                   {item}
                 </li>
               ))}

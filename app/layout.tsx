@@ -1,22 +1,24 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Alegreya_Sans } from "next/font/google";
+import { Bricolage_Grotesque, Instrument_Sans } from "next/font/google";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { Cursor } from "@/components/Cursor";
+import { LightField } from "@/components/LightField";
 import { site } from "@/lib/content";
 import "./globals.css";
 
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
+// Variable display face. No `weight` option means the full wght range ships, so weight and
+// width can be animated; opsz and wdth are requested explicitly.
+const bricolage = Bricolage_Grotesque({
+  variable: "--font-bricolage",
   subsets: ["latin"],
-  axes: ["opsz", "SOFT", "WONK"],
-  style: ["normal", "italic"],
+  axes: ["opsz", "wdth"],
   display: "swap",
 });
 
-// Humanist companion to Fraunces. The sans only ever renders at 400, with no italic.
-const sans = Alegreya_Sans({
+// Quieter companion for paragraphs, labels and metadata.
+const sans = Instrument_Sans({
   variable: "--font-sans",
-  weight: ["400"],
+  weight: ["400", "500"],
   subsets: ["latin"],
   display: "swap",
 });
@@ -32,20 +34,16 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0b0a09",
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={`${fraunces.variable} ${sans.variable}`}
-    >
+    <html lang="en" className={`${bricolage.variable} ${sans.variable}`}>
       <body>
+        <LightField />
         <SmoothScroll>{children}</SmoothScroll>
         <Cursor />
-        <div className="vignette" aria-hidden />
-        <div className="grain" aria-hidden />
       </body>
     </html>
   );
