@@ -170,6 +170,8 @@ export function Hero() {
           });
           exit
             .to(rest, { opacity: 0, y: -40, duration: 0.18 }, 0)
+            // the graph paper leaves before the white-out, so the hand-off to the work is pure white
+            .to(".hero-grid", { opacity: 0, duration: 0.4 }, 0.15)
             .to(name, { scale: () => target(), duration: 1, ease: "power3.in", force3D: false }, 0);
 
           // the letters only reach their final widths once the entrance ends
@@ -221,6 +223,9 @@ export function Hero() {
       ref={root}
       className="relative isolate flex min-h-svh flex-col justify-end overflow-clip px-4 pb-14 pt-28 md:px-12 md:pb-16"
     >
+      {/* graph-paper texture: hero only, faint, fading out toward the edges */}
+      <div aria-hidden className="hero-grid pointer-events-none absolute inset-0 -z-10" />
+
       <div className="relative">
         <div
           data-name

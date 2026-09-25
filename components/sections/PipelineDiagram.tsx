@@ -21,6 +21,7 @@ function Node({
   title,
   sub,
   step,
+  low,
   inspect,
 }: {
   x: number;
@@ -30,6 +31,8 @@ function Node({
   title: string;
   sub: string;
   step: number;
+  /** Labels sit in the lower band, leaving the upper half of the box free for what travels through. */
+  low?: boolean;
   /** Makes the node focusable/hoverable; used by the invoice pipeline. */
   inspect?: { label: string; onOn: () => void; onOff: () => void };
 }) {
@@ -62,7 +65,7 @@ function Node({
       />
       <text
         x={x + w / 2}
-        y={y + h / 2 - 3}
+        y={low ? y + h - 38 : y + h / 2 - 3}
         textAnchor="middle"
         fill={INK}
         fontSize={w > 150 ? 18 : 15}
@@ -73,7 +76,7 @@ function Node({
       </text>
       <text
         x={x + w / 2}
-        y={y + h / 2 + 20}
+        y={low ? y + h - 16 : y + h / 2 + 20}
         textAnchor="middle"
         fill={INK}
         fillOpacity={0.72}
@@ -353,19 +356,11 @@ export function InvoiceDiagram({ stage }: { stage: number }) {
             </text>
           ))}
 
-          <Edge step={1} d="M180 150 H250" />
-          <Edge step={2} d="M420 150 H490" />
-          <Edge step={3} d="M660 150 H730" />
-
-          <Node step={0} x={10} y={100} w={170} h={100} title="Drive" sub="invoice in" inspect={inspect(0)} />
-          <Node step={1} x={250} y={100} w={170} h={100} title="Groq" sub="OCR + extract" inspect={inspect(1)} />
-          <Node step={2} x={490} y={100} w={170} h={100} title="Validate" sub="structure fields" inspect={inspect(2)} />
-          <Node step={3} x={730} y={100} w={160} h={100} title="Drive" sub="data out" inspect={inspect(3)} />
-
-          {/* extracted data block: the fields land here as key/value rows, each one checked */}
-          <g data-json transform="translate(490 224)">
+          {/* extracted data block, drawn BEFORE the nodes so fields fly through Validate (behind it) instead of across its label */}
+          <g data-json transform="translate(490 268)">
             <text
-              y={-8}
+              data-json-title
+              y={-14}
               fill={INK}
               fillOpacity={0.72}
               fontSize={16}
@@ -401,13 +396,22 @@ export function InvoiceDiagram({ stage }: { stage: number }) {
             ))}
           </g>
 
+          <Edge step={1} d="M180 158 H250" />
+          <Edge step={2} d="M420 158 H490" />
+          <Edge step={3} d="M660 158 H730" />
+
+          <Node step={0} x={10} y={100} w={170} h={116} low title="Drive" sub="invoice in" inspect={inspect(0)} />
+          <Node step={1} x={250} y={100} w={170} h={116} low title="Groq" sub="OCR + extract" inspect={inspect(1)} />
+          <Node step={2} x={490} y={100} w={170} h={116} low title="Validate" sub="structure fields" inspect={inspect(2)} />
+          <Node step={3} x={730} y={100} w={160} h={116} low title="Drive" sub="data out" inspect={inspect(3)} />
+
           {/* the finished record, which carries on to Drive */}
           <rect
             data-record
-            x={486}
-            y={214}
-            width={196}
-            height={76}
+            x={482}
+            y={266}
+            width={254}
+            height={70}
             rx={8}
             fill="none"
             stroke={ACCENT}
@@ -417,23 +421,23 @@ export function InvoiceDiagram({ stage }: { stage: number }) {
           />
 
           {/* the invoice travelling through the pipeline */}
-          <g data-doc transform="translate(95 150)" opacity={0} pointerEvents="none">
+          <g data-doc transform="translate(95 130)" opacity={0} pointerEvents="none">
             <g data-doc-inner>
-              <rect x={-30} y={-42} width={60} height={84} rx={6} fill={WHITE} stroke={INK} strokeOpacity={0.7} />
-              {[-26, -14, -2, 10, 22].map((y, i) => (
+              <rect x={-20} y={-26} width={40} height={52} rx={5} fill={WHITE} stroke={INK} strokeOpacity={0.7} />
+              {[-16, -8, 0, 8, 16].map((y, i) => (
                 <rect
                   key={y}
                   data-doc-line
-                  x={-20}
+                  x={-13}
                   y={y}
-                  width={i === 0 ? 24 : 40}
+                  width={i === 0 ? 16 : 26}
                   height={3}
                   rx={1.5}
                   fill={INK}
                   fillOpacity={0.45}
                 />
               ))}
-              <rect data-scan x={-30} y={-42} width={60} height={2} fill={ACCENT} opacity={0} />
+              <rect data-scan x={-20} y={-26} width={40} height={2} fill={ACCENT} opacity={0} />
             </g>
           </g>
         </svg>
@@ -442,7 +446,7 @@ export function InvoiceDiagram({ stage }: { stage: number }) {
       {/* Adjacent metadata: follows the document as it travels, or the node under the pointer */}
       <div
         aria-live="polite"
-        className="mt-4 grid min-h-[7.5rem] gap-x-8 gap-y-2 border-t border-line pt-4 md:grid-cols-[9rem_1fr]"
+        className="mt-4 grid min-h-[6.5rem] gap-x-8 gap-y-2 border-t border-line pt-4 md:grid-cols-[9rem_1fr]"
       >
         <div>
           <p className="font-semibold text-accent">{info.phase}</p>
@@ -474,17 +478,20 @@ export function buildInvoiceTimeline(
   const scan = root.querySelector<SVGRectElement>("[data-scan]")!;
   const jsonLines = q<SVGTextElement>("[data-json-line]");
   const checks = q<SVGPathElement>("[data-check]");
+  const jsonTitle = root.querySelector<SVGTextElement>("[data-json-title]")!;
   const record = root.querySelector<SVGRectElement>("[data-record]")!;
   const edges = q<SVGPathElement>("[data-edge]");
   const scroller = root.querySelector<HTMLElement>("[data-scroller]");
 
   gsap.set(edges, { strokeDashoffset: 100 });
   gsap.set(checks, { strokeDashoffset: 100 });
+  // the heading waits until the rows have landed, so no field flies through it
+  gsap.set(jsonTitle, { opacity: 0 });
   gsap.set(doc, { opacity: 1 }); // parked hidden in the static markup; it exists only while this plays
 
   const HOP = 1.2;
   const VALIDATE = HOP * 2; // the document reaches Validate
-  const SEND = VALIDATE + 1.9; // the record leaves for Drive
+  const SEND = VALIDATE + 2.9; // the record leaves for Drive
   const END = SEND + 1.0;
 
   const on = (tl: gsap.core.Timeline, i: number, at: number) => tl.to(boxes[i], LIT, at);
@@ -519,14 +526,14 @@ export function buildInvoiceTimeline(
 
   // Groq: a scan beam sweeps the page and the text lights up
   tl.set(scan, { opacity: 1, y: 0 }, HOP + 0.1)
-    .to(scan, { y: 82, duration: 0.5, yoyo: true, repeat: 1 }, HOP + 0.1)
+    .to(scan, { y: 50, duration: 0.5, yoyo: true, repeat: 1 }, HOP + 0.1)
     .to(docLines, { fill: ACCENT, fillOpacity: 0.9, stagger: 0.06, duration: 0.2 }, HOP + 0.3)
     .set(scan, { opacity: 0 }, HOP + 1.15);
 
   // Validate: the fields lift off the document and land as key/value rows
   tl.fromTo(
     jsonLines,
-    { opacity: 0, x: 70, y: (i) => -(96 + 8 * i), scale: 0.6, fill: ACCENT },
+    { opacity: 0, x: 70, y: (i) => -(147 + 14 * i), scale: 0.6, fill: ACCENT },
     {
       opacity: 1,
       x: 0,
@@ -535,35 +542,28 @@ export function buildInvoiceTimeline(
       fill: INK,
       transformBox: "fill-box",
       transformOrigin: "0% 50%",
-      stagger: 0.16,
-      duration: 0.7,
+      // bottom row first, and stagger > duration: each field lands before the next lifts off, and
+      // never has to cross a row that has already landed
+      stagger: { each: 0.5, from: "end" },
+      duration: 0.45,
       ease: "power2.out",
     },
     VALIDATE + 0.2,
   )
     .to(docLines, { fillOpacity: 0.12, stagger: 0.05, duration: 0.3 }, VALIDATE + 0.3)
-    .to(checks, { strokeDashoffset: 0, stagger: 0.18, duration: 0.3 }, VALIDATE + 1.0)
-    .to(doc, { opacity: 0, duration: 0.4 }, VALIDATE + 1.3);
+    .to(checks, { strokeDashoffset: 0, stagger: 0.18, duration: 0.3 }, VALIDATE + 1.8)
+    .to(doc, { opacity: 0, duration: 0.4 }, VALIDATE + 1.2)
+    .to(jsonTitle, { opacity: 1, duration: 0.3 }, VALIDATE + 1.7);
 
   // the finished record (not the document) carries on to Drive
-  tl.fromTo(record, { opacity: 0, x: 0, y: 0, scale: 1 }, { opacity: 1, duration: 0.2 }, SEND - 0.2)
+  tl.fromTo(record, { opacity: 0 }, { opacity: 1, duration: 0.2 }, SEND - 0.2)
     .to(edges[2], { strokeDashoffset: 0, duration: 0.6 }, SEND - 0.1)
-    .to(
-      record,
-      {
-        x: 245,
-        y: -102,
-        scale: 0.3,
-        transformBox: "fill-box",
-        transformOrigin: "50% 50%",
-        duration: 0.7,
-        ease: "power2.inOut",
-      },
-      SEND,
-    )
-    .to(record, { opacity: 0, duration: 0.15 }, SEND + 0.65);
+    // animate the rect's own geometry (not a transform): it shrinks to a chip and lands on Drive's
+    // upper half (810,127), clear of its label. scale + transformBox on a rect with x/y attributes throws GSAP's origin off.
+    .to(record, { attr: { x: 780, y: 114, width: 60, height: 26 }, duration: 0.8, ease: "power2.inOut" }, SEND)
+    .to(record, { opacity: 0, duration: 0.2 }, SEND + 0.6);
   off(tl, 2, SEND + 0.5);
-  on(tl, 3, SEND + 0.6);
+  on(tl, 3, SEND + 0.7);
 
   // hold on the finished state so the section doesn't unpin the instant it lands
   tl.to({}, { duration: 0.6 });

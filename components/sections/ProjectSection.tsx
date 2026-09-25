@@ -20,7 +20,7 @@ const CAN_PIN = "(min-width: 1024px) and (min-height: 820px)";
 /** Scroll distance (as % of the viewport) each pinned moment holds the screen for. */
 const PIN_LENGTH: Partial<Record<Project["visual"], number>> = {
   "research-agent": 160,
-  "invoice-pipeline": 260,
+  "invoice-pipeline": 360,
   mosaic: 110,
 };
 

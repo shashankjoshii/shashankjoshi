@@ -92,6 +92,18 @@ html.lenis body {
   }
 }
 
+/* Hero-only graph paper. Texture, not a focal element: 1px lines at ~7% ink, masked so it fades
+   toward the edges and never reaches the section boundaries. */
+.hero-grid {
+  background-image:
+    linear-gradient(to right, rgb(10 10 10 / 0.075) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(10 10 10 / 0.075) 1px, transparent 1px);
+  background-size: 72px 72px;
+  background-position: -1px -1px;
+  -webkit-mask-image: radial-gradient(ellipse 80% 75% at 50% 48%, #000 35%, transparent 100%);
+  mask-image: radial-gradient(ellipse 80% 75% at 50% 48%, #000 35%, transparent 100%);
+}
+
 /* Small labels: sentence case sans. No tracked caps, no mono. */
 .label {
   font-family: var(--font-sans), system-ui, sans-serif;
