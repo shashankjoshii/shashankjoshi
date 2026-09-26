@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { gsap, type ScrollTrigger } from "@/lib/gsap";
+import { ShotCrop, ShotZoom } from "./ShotZoom";
 
 const ASPECT = 1535 / 797;
 const DESKTOP = { cols: 20, rows: 10 }; // 200 cells
@@ -34,13 +35,15 @@ export function MosaicShot({ src, alt, grid }: { src: string; alt: string; grid:
 
   return (
     <div className="relative overflow-hidden rounded-[6px] border border-line bg-surface">
+      {/* phones: zoom on the headline + search; tap for the whole page */}
+      <ShotCrop x={27.7} y={31}>
       <Image
         data-mosaic-real
         src={src}
         alt={alt}
         width={1535}
         height={797}
-        sizes="(min-width: 1024px) 58vw, 100vw"
+        sizes="(min-width: 1024px) 58vw, (min-width: 768px) 100vw, 250vw"
         className="h-auto w-full"
       />
       <div
@@ -72,6 +75,8 @@ export function MosaicShot({ src, alt, grid }: { src: string; alt: string; grid:
           );
         })}
       </div>
+      </ShotCrop>
+      <ShotZoom src={src} alt={`${alt}, full view`} />
     </div>
   );
 }

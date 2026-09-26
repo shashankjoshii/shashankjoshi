@@ -36,3 +36,16 @@ export function canRunShader() {
 export function isCoarsePointer() {
   return typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
 }
+
+/** The 3D scenes are a single small mesh each: any working WebGL2, unless the user asked to save data. */
+export function canRun3D() {
+  if (typeof window === "undefined") return false;
+  if ((navigator as NavigatorExtras).connection?.saveData) return false;
+  try {
+    const gl = document.createElement("canvas").getContext("webgl2");
+    gl?.getExtension("WEBGL_lose_context")?.loseContext();
+    return !!gl;
+  } catch {
+    return false;
+  }
+}

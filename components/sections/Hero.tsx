@@ -7,6 +7,7 @@ import { attachWeightField } from "@/lib/weightField";
 import { site } from "@/lib/content";
 import { SplitReveal } from "../SplitReveal";
 import { SelectionSweep } from "../SelectionSweep";
+import { Scene3D } from "../three/Scene3D";
 
 // Pinning needs the whole hero to fit in the viewport for the zoom-through.
 const CAN_PIN = "(min-width: 1024px) and (min-height: 820px)";
@@ -52,7 +53,7 @@ function useFitName(root: React.RefObject<HTMLElement | null>) {
     const fit = () => {
       const ratio = ghost.getBoundingClientRect().width / 100;
       if (!ratio || !box.clientWidth) return;
-      const size = Math.min((box.clientWidth / ratio) * 0.995, window.innerHeight * 0.43);
+      const size = Math.min((box.clientWidth / ratio) * 0.995, window.innerHeight * (window.innerHeight < 500 ? 0.25 : 0.38));
       if (Math.abs(size - last) < 0.5) return;
       last = size;
       section.style.setProperty("--name-size", `${size.toFixed(1)}px`);
@@ -172,6 +173,7 @@ export function Hero() {
             .to(rest, { opacity: 0, y: -40, duration: 0.18 }, 0)
             // the graph paper leaves before the white-out, so the hand-off to the work is pure white
             .to(".hero-grid", { opacity: 0, duration: 0.4 }, 0.15)
+            .to(".hero-orb", { opacity: 0, y: -60, duration: 0.35 }, 0.05)
             .to(name, { scale: () => target(), duration: 1, ease: "power3.in", force3D: false }, 0);
 
           // the letters only reach their final widths once the entrance ends
@@ -200,11 +202,14 @@ export function Hero() {
             { "--wght": 300, "--wdth": 80, ease: "none", scrollTrigger: st, immediateRender: false },
           );
           const drift = gsap.to(name, { yPercent: -14, ease: "none", scrollTrigger: st });
+          const orbDrift = gsap.to(".hero-orb", { yPercent: -18, opacity: 0, ease: "none", scrollTrigger: st });
           cleanups.push(() => {
             thin.scrollTrigger?.kill();
             thin.kill();
             drift.scrollTrigger?.kill();
             drift.kill();
+            orbDrift.scrollTrigger?.kill();
+            orbDrift.kill();
           });
         }
 
@@ -221,10 +226,16 @@ export function Hero() {
     <section
       id="top"
       ref={root}
-      className="relative isolate flex min-h-svh flex-col justify-end overflow-clip px-4 pb-14 pt-28 md:px-12 md:pb-16"
+      className="relative isolate flex min-h-svh flex-col justify-end overflow-clip px-4 pb-14 pt-28 md:px-12 md:pb-16 [@media(max-height:500px)]:pb-4 [@media(max-height:500px)]:pt-[3.75rem]"
     >
       {/* graph-paper texture: hero only, faint, fading out toward the edges */}
       <div aria-hidden className="hero-grid pointer-events-none absolute inset-0 -z-10" />
+
+      {/* the liquid-glass orb: 3D depth behind the type, so the name sits in front of something */}
+      <Scene3D
+        kind="orb"
+        className="hero-orb absolute -z-[5] left-1/2 top-[9%] h-[36svh] w-[78vw] -translate-x-1/2 md:left-auto md:right-[-3%] md:top-[5%] md:h-[74svh] md:w-[54vw] md:translate-x-0 [@media(max-height:500px)]:hidden"
+      />
 
       <div className="relative">
         <div
@@ -243,9 +254,9 @@ export function Hero() {
       </div>
 
       <div className="hero-rest">
-        <div className="hero-line mt-8 h-px origin-left bg-fg/30" />
+        <div className="hero-line mt-8 [@media(max-height:500px)]:mt-3 h-px origin-left bg-fg/30" />
 
-        <div className="mt-6 grid gap-6 md:grid-cols-12 md:items-end">
+        <div className="mt-6 [@media(max-height:500px)]:mt-3 grid gap-6 md:grid-cols-12 md:items-end">
           <p className="hero-role text-lg font-medium text-fg md:col-span-4">
             <SplitReveal text={site.role} trigger="manual" />
           </p>

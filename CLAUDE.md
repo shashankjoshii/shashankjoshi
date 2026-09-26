@@ -60,8 +60,11 @@ planned future addition. Not in this initial build.)*
   the visual centerpiece rather than decorative clutter.
 - **Direction (updated 2026-09-25): light, not dark.** White background, near-black text, ONE vibrant
   blue accent (`#0038FF`) used sparingly (primary CTA, links, focus, one selection-sweep per section,
-  the active pipeline stage). Bricolage Grotesque (variable wght/wdth) for display, Instrument Sans
-  for body. Because light + blue + bold sans is a common SaaS look, the motion is the differentiator:
+  the active pipeline stage). **Typography (updated 2026-09-26): Roboto Flex everywhere** — tall and
+  condensed; display maps the old 75..100 `--wdth` scale onto Flex's 25..55 in `app/globals.css`, body
+  runs at wdth 72. **Depth + blue (2026-09-26):** R3F + custom GLSL 3D (`components/three/`): liquid-glass
+  orb in the hero, glass knot on a full-blue Contact section; blue velocity marquee between Work and
+  Process; blue scroll-progress line; ghost numerals and pointer tilt on projects. Because light + blue + bold sans is a common SaaS look, the motion is the differentiator:
   "type is a live material" (weight/width animate with scroll and pointer) plus a scroll-choreographed
   OGL caustics shader (`components/LightField.tsx`). Never put black on the blue (2.84:1); links are
   underlined. Every effect needs a static reduced-motion fallback, and expensive ones are gated in

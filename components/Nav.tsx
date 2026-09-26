@@ -20,6 +20,7 @@ export function Nav() {
   const root = useRef<HTMLElement>(null);
   const scrollTo = useScrollTo();
   const [mode, setMode] = useState<Mode>("clear");
+  const [menu, setMenu] = useState(false); // phones only: the inline links are hidden below sm
 
   useEffect(() => {
     const pinned = window.matchMedia(HERO_PINNED);
@@ -41,6 +42,19 @@ export function Nav() {
       window.removeEventListener("resize", update);
     };
   }, []);
+
+  useEffect(() => {
+    if (!menu) return;
+    const close = (e: KeyboardEvent | PointerEvent) => {
+      if (e instanceof KeyboardEvent ? e.key === "Escape" : !root.current?.contains(e.target as Node)) setMenu(false);
+    };
+    window.addEventListener("keydown", close);
+    window.addEventListener("pointerdown", close);
+    return () => {
+      window.removeEventListener("keydown", close);
+      window.removeEventListener("pointerdown", close);
+    };
+  }, [menu]);
 
   useGSAP(
     () => {
@@ -65,7 +79,7 @@ export function Nav() {
     <header
       ref={root}
       data-mode={mode}
-      className={`pointer-events-none fixed inset-x-0 top-0 z-50 flex items-center justify-between px-4 py-3 transition-[background-color,border-color,opacity,transform] duration-300 md:px-12 ${
+      className={`pointer-events-none fixed inset-x-0 top-0 z-50 flex items-center justify-between px-4 py-3 [@media(max-height:500px)]:py-1 transition-[background-color,border-color,opacity,transform] duration-300 md:px-12 ${
         mode === "solid" ? "border-b border-line bg-bg/95 backdrop-blur" : "border-b border-transparent"
       } ${mode === "away" ? "!opacity-0" : ""}`}
     >
@@ -94,6 +108,15 @@ export function Nav() {
             {item.label}
           </a>
         ))}
+        <button
+          type="button"
+          aria-expanded={menu}
+          aria-controls="mobile-menu"
+          onClick={() => setMenu((m) => !m)}
+          className="label inline-flex min-h-11 items-center px-1 text-fg sm:hidden"
+        >
+          {menu ? "Close" : "Menu"}
+        </button>
         <Magnetic>
           <a
             href={contact.business.href}
@@ -103,6 +126,28 @@ export function Nav() {
           </a>
         </Magnetic>
       </nav>
+      {menu && (
+        <ul
+          id="mobile-menu"
+          className="pointer-events-auto absolute right-4 top-full mt-1 min-w-44 rounded-[6px] border border-line bg-bg py-1 sm:hidden"
+        >
+          {nav.map((item) => (
+            <li key={item.href}>
+              <a
+                href={item.href}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setMenu(false);
+                  scrollTo(item.href);
+                }}
+                className="label flex min-h-11 items-center px-4 text-fg"
+              >
+                {item.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
     </header>
   );
 }

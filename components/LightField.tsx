@@ -50,7 +50,7 @@ const fragment = /* glsl */ `
     float c = clamp(caustic(uv, uTime), 0.0, 1.0);
     // fade toward the right so the type on the left stays on quieter ground
     float side = mix(0.55, 1.0, smoothstep(0.1, 0.9, vUv.x));
-    vec3 col = vec3(1.0) - c * uIntensity * side * vec3(0.06, 0.04, 0.0);
+    vec3 col = vec3(1.0) - c * uIntensity * side * vec3(0.10, 0.07, 0.0);
     gl_FragColor = vec4(col, 1.0);
   }
 `;
@@ -59,7 +59,7 @@ const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
 /**
  * One fixed canvas behind the whole page. Intensity is choreographed by scroll (full in the hero,
- * gone through the work, back at Contact) and the render loop idles at zero. Reduced motion or an
+ * then gone for the rest of the page) and the render loop idles at zero. Reduced motion or an
  * under-powered device gets a single still frame or a CSS gradient, pinned to the hero only.
  */
 export function LightField() {
@@ -135,7 +135,7 @@ export function LightField() {
         return;
       }
 
-      // ---- scroll choreography: hero 1 -> 0, quiet through the work, 0 -> 0.6 into Contact ----
+      // ---- scroll choreography: hero 1 -> 0, then idle for the rest of the page ----
       const state = { intensity: 1, vel: 0, smoothVel: 0 };
       let contactTop = Infinity;
       const measure = () => {
@@ -144,8 +144,8 @@ export function LightField() {
       const compute = (y: number) => {
         const vh = window.innerHeight;
         const hero = 1 - clamp01(y / (vh * 0.8));
-        const contact = clamp01((y + vh - contactTop) / (vh * 0.9)) * 0.6;
-        state.intensity = Math.max(hero, contact);
+        // Contact now sits on solid blue with its own 3D scene, so the caustics only need the hero
+        state.intensity = y + vh > contactTop ? 0 : hero;
       };
       measure();
       compute(window.scrollY);

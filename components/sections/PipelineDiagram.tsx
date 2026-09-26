@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { gsap, type ScrollTrigger } from "@/lib/gsap";
+import { gsap, ScrollTrigger } from "@/lib/gsap";
 import { invoiceStages } from "@/lib/content";
 
 // SVG attributes can't take CSS variables and GSAP tweens concrete values, so the palette is
@@ -120,12 +120,12 @@ function Packet({ attr, label }: { attr: string; label?: string }) {
     <g {...props} opacity={0} pointerEvents="none">
       {label ? (
         <>
-          <rect x={-27} y={-11} width={54} height={22} rx={11} fill={ACCENT} />
+          <rect x={-31} y={-12} width={62} height={24} rx={12} fill={ACCENT} />
           <text
-            y={4}
+            y={4.5}
             textAnchor="middle"
             fill={WHITE}
-            fontSize={12}
+            fontSize={13}
             fontWeight={600}
             fontFamily="var(--font-sans), sans-serif"
           >
@@ -141,7 +141,9 @@ function Packet({ attr, label }: { attr: string; label?: string }) {
 
 export function ResearchDiagram() {
   return (
-    <div className="overflow-x-auto" data-lenis-prevent>
+    <>
+      <ResearchStack />
+      <div className="hidden overflow-x-auto md:block" data-lenis-prevent>
       <svg
         data-diagram
         viewBox="0 0 720 420"
@@ -206,8 +208,201 @@ export function ResearchDiagram() {
         <Packet attr="data-packet-merge" />
         <Packet attr="data-packet-merge" />
       </svg>
+      </div>
+    </>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Compact layouts for phones (< md). The SVGs are 600-680px wide and would    */
+/*  either scroll sideways or shrink their text to ~5px, so phones get a         */
+/*  vertical flow built from real HTML at real reading size.                     */
+/* -------------------------------------------------------------------------- */
+
+const REST_BORDER = "rgba(10,10,10,0.25)";
+
+function MNode({ title, sub, step }: { title: string; sub: string; step: number }) {
+  return (
+    <div
+      data-m-node
+      data-m-step={step}
+      className="rounded-[12px] border border-fg/25 bg-surface px-3 py-2.5 text-center"
+    >
+      <p className="display text-[1rem] leading-tight [--wght:700]">{title}</p>
+      <p className="text-[0.8125rem] leading-snug text-muted">{sub}</p>
     </div>
   );
+}
+
+function MLink({ step }: { step: number }) {
+  return <span data-m-link data-m-step={step} aria-hidden className="mx-auto block h-6 w-px origin-top bg-fg/35" />;
+}
+
+function ResearchStack() {
+  return (
+    <div
+      data-m-research
+      role="img"
+      aria-label="AI Research Agent workflow: a question goes to a planner, fans out to three parallel researchers, then a synthesis step writes the report."
+      className="md:hidden"
+    >
+      <MNode step={0} title="Question" sub="trigger" />
+      <p data-m-text className="mt-2 text-center text-[0.875rem] text-muted">
+        &ldquo;Why do users churn?&rdquo;
+      </p>
+      <MLink step={1} />
+      <MNode step={1} title="Planner" sub="plans angles" />
+      <MLink step={2} />
+      <div className="grid grid-cols-3 gap-2">
+        {["A", "B", "C"].map((a) => (
+          <div
+            key={a}
+            data-m-node
+            data-m-step={2}
+            className="rounded-[12px] border border-fg/25 bg-surface px-1.5 py-2.5 text-center"
+          >
+            <p className="display text-[0.9375rem] leading-tight [--wght:700]">Researcher</p>
+            <p className="text-[0.8125rem] leading-snug text-muted">angle {a}</p>
+            <span data-m-bar className="mx-auto mt-2 block h-[3px] w-4/5 origin-left rounded-full bg-accent" />
+          </div>
+        ))}
+      </div>
+      <MLink step={3} />
+      <MNode step={3} title="Synthesis" sub="writes report" />
+      <p data-m-summary className="mt-2 text-center text-[0.875rem] leading-snug text-fg">
+        3 angles merged
+        <br />1 report written
+      </p>
+    </div>
+  );
+}
+
+/** Scrubbed reveal for the phone layout. The un-animated markup is the finished (reduced-motion) state. */
+export function buildResearchMobile(root: HTMLElement, scrollTrigger: ScrollTrigger.Vars) {
+  const q = <T extends Element>(s: string) => gsap.utils.toArray<T>(s, root);
+  const at = (sel: string, step: number) =>
+    q<HTMLElement>(sel).filter((el) => Number(el.dataset.mStep) === step);
+  const nodes = q<HTMLElement>("[data-m-node]");
+  const bars = q<HTMLElement>("[data-m-bar]");
+  const text = q<HTMLElement>("[data-m-text]");
+  const summary = q<HTMLElement>("[data-m-summary]");
+
+  gsap.set(
+    nodes.filter((n) => n.dataset.mStep !== "0"),
+    { opacity: 0, y: 10 },
+  );
+  gsap.set(q("[data-m-link]"), { scaleY: 0 });
+  gsap.set(bars, { scaleX: 0 });
+  gsap.set(summary, { opacity: 0, y: 6 });
+  gsap.set(text, { opacity: 0.4 });
+
+  const tl = gsap.timeline({ defaults: { ease: "none" }, scrollTrigger });
+  const lit = (n: HTMLElement[], t: number, keep = false) => {
+    tl.to(n, { borderColor: ACCENT, backgroundColor: WHITE, duration: 0.2 }, t);
+    if (!keep) tl.to(n, { borderColor: REST_BORDER, backgroundColor: SURFACE, duration: 0.2 }, t + 0.7);
+  };
+  lit(at("[data-m-node]", 0), 0);
+  tl.to(text, { opacity: 1, duration: 0.3 }, 0.1);
+  for (let step = 1; step <= 3; step++) {
+    const t = step * 1.2;
+    tl.to(at("[data-m-link]", step), { scaleY: 1, duration: 0.3 }, t - 0.9);
+    tl.to(at("[data-m-node]", step), { opacity: 1, y: 0, duration: 0.4, stagger: 0.1 }, t - 0.6);
+    lit(at("[data-m-node]", step), t - 0.4, step === 3);
+    if (step === 2) tl.to(bars, { scaleX: 1, duration: 0.8, stagger: 0.1 }, t - 0.2);
+  }
+  tl.to(summary, { opacity: 1, y: 0, duration: 0.4 }, 3.9);
+  tl.to({}, { duration: 0.3 });
+  return tl;
+}
+
+function InvoiceStack({
+  shown,
+  pick,
+}: {
+  shown: number;
+  pick: (i: number) => { label: string; onOn: () => void; onOff: () => void };
+}) {
+  const nodes = [
+    ["Drive", "invoice in"],
+    ["Groq", "OCR + extract"],
+    ["Validate", "structure fields"],
+    ["Drive", "data out"],
+  ];
+  return (
+    <div
+      data-m-invoice
+      className="md:hidden"
+      role="group"
+      aria-label="Invoice extraction pipeline: Drive in, Groq OCR and extraction, validate, Drive out. Tap a stage to inspect it."
+    >
+      {nodes.map(([title, sub], i) => {
+        const on = i === shown;
+        const p = pick(i);
+        return (
+          <div key={i}>
+            {i > 0 && (
+              <span
+                aria-hidden
+                className={`mx-auto block h-5 w-px transition-colors ${i <= shown ? "bg-accent" : "bg-fg/35"}`}
+              />
+            )}
+            <button
+              type="button"
+              aria-label={p.label}
+              aria-pressed={on}
+              onClick={p.onOn}
+              className={`grid min-h-14 w-full grid-cols-[5.75rem_1fr] items-center gap-2 rounded-[12px] border px-3 py-2 text-left transition-colors ${
+                on ? "border-accent bg-bg" : "border-fg/25 bg-surface"
+              }`}
+            >
+              <span className={`whitespace-nowrap text-[0.8125rem] ${on ? "font-bold text-accent" : "text-muted"}`}>
+                {i + 1}&ensp;{invoiceStages[i].phase}
+              </span>
+              <span>
+                <span className="display block text-[1rem] leading-tight [--wght:700]">{title}</span>
+                <span className="block text-[0.8125rem] leading-snug text-muted">{sub}</span>
+              </span>
+            </button>
+          </div>
+        );
+      })}
+      <div className="mt-4 rounded-[8px] border border-line bg-bg px-3 py-2.5">
+        <p className="text-[0.8125rem] text-muted">Sample output</p>
+        <ul className="mt-1 space-y-0.5 text-[0.875rem] leading-snug">
+          {SAMPLE_LINES.map((line) => {
+            const [k, ...v] = line.split(/\s{2,}/);
+            return (
+              <li key={line} className="flex items-baseline justify-between gap-3">
+                <span>
+                  <span className="text-muted">{k}</span>&ensp;{v.join(" ")}
+                </span>
+                <span aria-hidden className="text-accent">
+                  &#10003;
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+/** Phone layout: scroll progress just advances the active stage. State-driven, no tweened SVG. */
+export function buildInvoiceMobile(
+  _root: HTMLElement,
+  scrollTrigger: ScrollTrigger.Vars,
+  onStage?: (stage: number) => void,
+) {
+  let last = -1;
+  return ScrollTrigger.create({
+    ...scrollTrigger,
+    scrub: undefined,
+    onUpdate: (self) => {
+      const stage = Math.min(3, Math.floor(self.progress * 4));
+      if (stage !== last) onStage?.((last = stage));
+    },
+  });
 }
 
 /**
@@ -331,7 +526,8 @@ export function InvoiceDiagram({ stage }: { stage: number }) {
 
   return (
     <div>
-      <div className="overflow-x-auto" data-scroller data-lenis-prevent>
+      <InvoiceStack shown={shown} pick={inspect} />
+      <div className="hidden overflow-x-auto md:block" data-scroller data-lenis-prevent>
         <svg
           data-diagram
           viewBox="0 0 900 360"

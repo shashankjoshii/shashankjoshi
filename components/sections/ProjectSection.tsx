@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { gsap, useGSAP, MOTION_OK, type ScrollTrigger } from "@/lib/gsap";
+import { gsap, useGSAP, ScrollTrigger, MOTION_OK } from "@/lib/gsap";
 import type { Project } from "@/lib/content";
 import { SplitReveal } from "../SplitReveal";
 import { SelectionSweep } from "../SelectionSweep";
@@ -10,12 +10,16 @@ import {
   InvoiceDiagram,
   buildResearchTimeline,
   buildInvoiceTimeline,
+  buildResearchMobile,
+  buildInvoiceMobile,
 } from "./PipelineDiagram";
 import { TiltShot, buildTilt } from "./moments/TiltShot";
 import { MosaicShot, buildMosaic, useMosaicGrid } from "./moments/MosaicShot";
 
 // Pinning needs the whole section to fit in the viewport, otherwise the bottom is cut off mid-pin.
 const CAN_PIN = "(min-width: 1024px) and (min-height: 820px)";
+/** Below this the diagrams swap to their compact, purpose-built layouts (see PipelineDiagram). */
+const WIDE = "(min-width: 768px)";
 
 /** Scroll distance (as % of the viewport) each pinned moment holds the screen for. */
 const PIN_LENGTH: Partial<Record<Project["visual"], number>> = {
@@ -69,32 +73,78 @@ export function ProjectSection({
     () => {
       const mm = gsap.matchMedia();
 
-      mm.add({ motion: MOTION_OK, pin: CAN_PIN }, (ctx) => {
+      mm.add({ motion: MOTION_OK, pin: CAN_PIN, wide: WIDE }, (ctx) => {
         // GSAP runs this when ANY condition matches, so motion has to be checked explicitly
-        const { motion, pin } = ctx.conditions as { motion: boolean; pin: boolean };
+        const { motion, pin, wide } = ctx.conditions as { motion: boolean; pin: boolean; wide: boolean };
         if (!motion) return;
         const section = root.current!;
 
         // ---- shared, deliberately quiet frame -------------------------------------------
-        // the kicker's number rolls from the previous project's to this one
-        const roll = { trigger: section, start: "top 95%", end: "top 25%", scrub: true };
-        gsap.set(".p-digit-out", { visibility: "visible" });
-        gsap.fromTo(".p-digit-in", { yPercent: 100 }, { yPercent: 0, ease: "none", scrollTrigger: roll });
-        gsap.fromTo(".p-digit-out", { yPercent: 0 }, { yPercent: -100, ease: "none", scrollTrigger: roll });
+        // the kicker's number rolls from the previous project's to this one. Wide screens only:
+        // on phones a scrubbed roll leaves two clipped digits overlapping mid-view, so the current
+        // number just sits there.
+        if (wide) {
+          const roll = { trigger: section, start: "top 95%", end: "top 25%", scrub: true };
+          gsap.set(".p-digit-out", { visibility: "visible" });
+          gsap.fromTo(".p-digit-in", { yPercent: 100 }, { yPercent: 0, ease: "none", scrollTrigger: roll });
+          gsap.fromTo(".p-digit-out", { yPercent: 0 }, { yPercent: -100, ease: "none", scrollTrigger: roll });
+        }
 
-        gsap.from(gsap.utils.toArray<HTMLElement>(".p-row", section), {
-          y: 18,
-          opacity: 0,
-          duration: 0.8,
-          ease: "power3.out",
-          stagger: 0.08,
-          scrollTrigger: { trigger: ".p-dl", start: "top 82%", once: true },
+        // ---- depth: the ghost numeral drifts slower than the page, the visual tilts toward the pointer
+        const ghost = gsap.fromTo(
+          ".p-ghost",
+          { yPercent: 30 },
+          { yPercent: -30, ease: "none", scrollTrigger: { trigger: section, start: "top bottom", end: "bottom top", scrub: true } },
+        );
+        const cleanups: Array<() => void> = [() => { ghost.scrollTrigger?.kill(); ghost.kill(); }];
+        if (window.matchMedia("(hover: hover) and (pointer: fine)").matches && visual.current?.parentElement) {
+          // the wrapper, not the visual: the moments animate transforms on the visual itself
+          const card = visual.current.parentElement;
+          gsap.set(card, { transformPerspective: 1400, transformStyle: "preserve-3d" });
+          const rx = gsap.quickTo(card, "rotationX", { duration: 0.8, ease: "power3.out" });
+          const ry = gsap.quickTo(card, "rotationY", { duration: 0.8, ease: "power3.out" });
+          const move = (e: PointerEvent) => {
+            const r = card.getBoundingClientRect();
+            ry(((e.clientX - r.left) / r.width - 0.5) * 7);
+            rx(-((e.clientY - r.top) / r.height - 0.5) * 5);
+          };
+          const leave = () => { rx(0); ry(0); };
+          card.addEventListener("pointermove", move);
+          card.addEventListener("pointerleave", leave);
+          cleanups.push(() => {
+            card.removeEventListener("pointermove", move);
+            card.removeEventListener("pointerleave", leave);
+            gsap.set(card, { clearProps: "transform" });
+          });
+        }
+
+        // Metadata rows. Deliberately NOT a scrollTrigger-bound tween: a once-trigger that fires
+        // while a ScrollTrigger.refresh() is in flight (images, fonts, the KIRO grid swap) has its
+        // linked animation reverted/killed mid-play and the rows stay at ~0.1 opacity forever on
+        // phones. The trigger only starts a free-standing tween, so a refresh can't strand it.
+        const rows = gsap.utils.toArray<HTMLElement>(".p-row", section);
+        gsap.set(rows, { y: 18, opacity: 0 });
+        let shown = false;
+        const showRows = () => {
+          if (shown) return;
+          shown = true;
+          gsap.to(rows, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out", stagger: 0.08, overwrite: true });
+        };
+        ScrollTrigger.create({
+          trigger: section.querySelector(".p-dl"),
+          start: "top 88%",
+          once: true,
+          onEnter: showRows,
         });
+        // belt and braces: if the section is well into view and the trigger never fired, show anyway
+        ScrollTrigger.create({ trigger: section, start: "top 40%", once: true, onEnter: showRows });
 
-        // stacked sheets: this section slides over the previous one, which settles back
-        if (prevId) {
+        // stacked sheets: this section slides over the previous one, which settles back.
+        // Real elements, not a selector string: the previous section is outside this scope.
+        const prevInner = prevId ? document.getElementById(prevId)?.querySelector<HTMLElement>(".p-inner") : null;
+        if (prevInner) {
           gsap.fromTo(
-            `#${prevId} .p-inner`,
+            prevInner,
             { scale: 1, opacity: 1 },
             {
               scale: 0.95,
@@ -120,22 +170,27 @@ export function ProjectSection({
               }
             : {
                 trigger: visual.current,
-                start: "top 75%",
-                end: "bottom 45%",
+                // phones: the visual sits at the bottom of a short section, so "bottom 45%" is
+                // often unreachable and the moment would stop half-built. Finish while it's on screen.
+                start: wide ? "top 75%" : "top 88%",
+                end: wide ? "bottom 45%" : "bottom 78%",
                 scrub: 0.6,
               };
 
-        if (project.visual === "research-agent") buildResearchTimeline(visual.current!, trigger);
+        if (project.visual === "research-agent")
+          (wide ? buildResearchTimeline : buildResearchMobile)(visual.current!, trigger);
         if (project.visual === "invoice-pipeline")
-          buildInvoiceTimeline(visual.current!, trigger, setStage);
+          (wide ? buildInvoiceTimeline : buildInvoiceMobile)(visual.current!, trigger, setStage);
         if (project.visual === "mosaic") buildMosaic(visual.current!, trigger);
         if (project.visual === "counter-tilt")
           buildTilt(visual.current!, {
             trigger: visual.current,
             start: "top 90%",
-            end: "top 30%",
+            end: wide ? "top 30%" : "top 55%",
             scrub: 0.6,
           });
+
+        return () => cleanups.forEach((fn) => fn());
       });
     },
     { scope: root, dependencies: [grid.cols] },
@@ -150,6 +205,13 @@ export function ProjectSection({
       style={{ zIndex: index + 1 }}
     >
       <div className="p-inner relative flex min-h-svh flex-col justify-center overflow-hidden px-4 py-20 [transform-origin:50%_100%] md:px-12 lg:py-10">
+        {/* a huge blue numeral behind everything, drifting at its own speed: a second plane of depth */}
+        <span
+          aria-hidden
+          className="p-ghost display pointer-events-none absolute -right-[4vw] top-[6%] select-none text-[clamp(14rem,42vw,44rem)] leading-none text-accent/[0.06] [--wght:800]"
+        >
+          {project.index}
+        </span>
         <div className="relative">
           <p className="label mb-3 flex items-center gap-1.5 text-muted">
             <span className="sr-only">
@@ -157,7 +219,7 @@ export function ProjectSection({
             </span>
             <span aria-hidden>Project</span>
             <span aria-hidden className="relative inline-block h-[1.4em] overflow-hidden tabular-nums">
-              <span className="p-digit-in block leading-[1.4]">{project.index}</span>
+              <span className="p-digit-in block leading-[1.4] text-accent">{project.index}</span>
               <span className="p-digit-out invisible absolute inset-x-0 top-0 block leading-[1.4]">
                 {prevNumber}
               </span>

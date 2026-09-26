@@ -1,5 +1,6 @@
 import { Preloader } from "@/components/Preloader";
 import { Nav } from "@/components/Nav";
+import { Marquee, ScrollProgress } from "@/components/Marquee";
 import { Hero } from "@/components/sections/Hero";
 import { ProjectSection } from "@/components/sections/ProjectSection";
 import { Process } from "@/components/sections/Process";
@@ -18,6 +19,7 @@ export default function Home() {
         Skip to work
       </a>
       <Preloader />
+      <ScrollProgress />
       <Nav />
       <main id="main">
         <Hero />
@@ -26,6 +28,7 @@ export default function Home() {
             <ProjectSection key={p.id} project={p} index={i} total={projects.length} prevId={projects[i - 1]?.id} />
           ))}
         </div>
+        <Marquee />
         <Process />
         <About />
         <Currently />

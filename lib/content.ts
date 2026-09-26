@@ -11,10 +11,11 @@ export const site = {
   timezone: "Asia/Kolkata",
   email: "shashankjoshi.imscit20@gmail.com",
   links: {
-    github: "https://github.com/", // TODO
-    linkedin: "https://linkedin.com/", // TODO
-    resume: "#", // TODO: /resume.pdf
-    nirmata: "#", // TODO: Nirmata Designs URL
+    github: "https://github.com/shashankjoshii",
+    linkedin: "https://www.linkedin.com/in/shashankrjoshi/",
+    // Empty = not shown. Set to "/resume.pdf" (file in /public) or the studio URL to bring them back.
+    resume: "",
+    nirmata: "",
   },
 };
 
