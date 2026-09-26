@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import type { ShaderMaterial, Mesh } from "three";
+import { gsap } from "@/lib/gsap";
 import { orbVertex, orbFragment, solidVertex } from "./shaders";
 
 export type StageKind = "orb" | "knot";
@@ -90,6 +91,27 @@ function Knot({ still }: { still: boolean }) {
 }
 
 /**
+ * Ties this canvas's rendering to gsap.ticker — the single requestAnimationFrame loop that already
+ * drives Lenis (SmoothScroll.tsx ticks Lenis from the same ticker) — instead of R3F's own default
+ * internal rAF. With the Canvas in frameloop="never", nothing renders unless this calls `advance()`,
+ * so Lenis, every GSAP tween/ScrollTrigger, and this canvas's render all originate from one rAF;
+ * there is no second, independently-scheduled loop for the browser to keep in sync.
+ */
+function FrameDriver({ active }: { active: boolean }) {
+  const advance = useThree((s) => s.advance);
+  useEffect(() => {
+    if (!active) return;
+    // re-zero against "now" so the first tick after (re)activating doesn't hand the renderer a
+    // multi-second delta (gsap.ticker.time keeps counting while this canvas was paused/off-screen)
+    const t0 = gsap.ticker.time;
+    const tick = (time: number) => advance(time - t0);
+    gsap.ticker.add(tick);
+    return () => gsap.ticker.remove(tick);
+  }, [active, advance]);
+  return null;
+}
+
+/**
  * One small R3F canvas. It only renders while it is on screen, and renders a single frame when
  * motion is reduced. Everything is transparent, so the page shows through around the object.
  */
@@ -108,12 +130,13 @@ export default function Stage({ kind, still }: { kind: StageKind; still: boolean
   return (
     <div ref={host} className="h-full w-full">
       <Canvas
-        dpr={[1, 1.75]}
-        frameloop={still ? "demand" : visible ? "always" : "never"}
+        dpr={[1, 1.5]}
+        frameloop={still ? "demand" : "never"}
         gl={{ alpha: true, antialias: true, powerPreference: "high-performance" }}
         camera={{ position: [0, 0, kind === "orb" ? 3.6 : 3.9], fov: 40 }}
         style={{ background: "transparent" }}
       >
+        <FrameDriver active={!still && visible} />
         {kind === "orb" ? <Orb still={still} /> : <Knot still={still} />}
       </Canvas>
     </div>

@@ -59,8 +59,8 @@ planned future addition. Not in this initial build.)*
 - Typography-led design — confident type scale, generous whitespace, let the 4 projects be
   the visual centerpiece rather than decorative clutter.
 - **Direction (updated 2026-09-25): light, not dark.** White background, near-black text, ONE vibrant
-  blue accent (`#0038FF`) used sparingly (primary CTA, links, focus, one selection-sweep per section,
-  the active pipeline stage). **Typography (updated 2026-09-26): Roboto Flex everywhere** — tall and
+  blue accent (`#0038FF`) used sparingly (primary CTA, links, focus, the active pipeline stage). The
+  selection-sweep highlight is rationed (updated 2026-09-26): hero + Invoice Pipeline only, not one per section. **Typography (updated 2026-09-26): Roboto Flex everywhere** — tall and
   condensed; display maps the old 75..100 `--wdth` scale onto Flex's 25..55 in `app/globals.css`, body
   runs at wdth 72. **Depth + blue (2026-09-26):** R3F + custom GLSL 3D (`components/three/`): liquid-glass
   orb in the hero, glass knot on a full-blue Contact section; blue velocity marquee between Work and

@@ -28,6 +28,12 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#ffffff",
+  width: "device-width",
+  initialScale: 1,
+  // Full-bleed in landscape on notched phones, so the blue sections don't get white letterbox bars.
+  // Every section already pads >= 48px at md (wider than any landscape notch inset); the fixed nav
+  // pads with env(safe-area-inset-*) itself (.nav-safe in globals.css).
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

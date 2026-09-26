@@ -10,6 +10,25 @@ import type { StageKind } from "./Stage";
 // so none of it is on the LCP path.
 const Stage = dynamic(() => import("./Stage"), { ssr: false });
 
+// @react-three/fiber 9.8.1 (the current latest stable release — there is no newer stable version,
+// only unstable v10 canaries) unconditionally does `new THREE.Clock()` inside its own store creation
+// to back state.clock, which three r183+ has deprecated in favour of THREE.Timer. That call site is
+// inside fiber's bundled code, not ours, so it cannot be swapped for a Timer without patching a
+// dependency or shipping an unstable major. This filters exactly that one known, harmless upstream
+// message (by exact text, not a blanket suppression) so it doesn't clutter the console; every other
+// warning, including any other THREE.* deprecation, still prints normally.
+if (typeof window !== "undefined") {
+  const w = window as typeof window & { __clockWarnFiltered?: boolean };
+  if (!w.__clockWarnFiltered) {
+    w.__clockWarnFiltered = true;
+    const warn = console.warn.bind(console);
+    console.warn = (...args: unknown[]) => {
+      if (typeof args[0] === "string" && args[0].includes("THREE.Clock: This module has been deprecated")) return;
+      warn(...args);
+    };
+  }
+}
+
 /**
  * Lazy 3D slot. Fills its parent. On devices that cannot run WebGL it renders a CSS approximation
  * of the same object, so the blue is still there.

@@ -26,7 +26,8 @@ export const nav = [
 ];
 
 // Each project has its own authored motion moment, so each has its own visual kind.
-export type ProjectVisual = "research-agent" | "invoice-pipeline" | "counter-tilt" | "mosaic";
+// The two product projects break the shared template: each gets a full-width feature of its own.
+export type ProjectVisual = "research-agent" | "invoice-pipeline" | "dashboard-zoom" | "brand-specimen";
 
 export type Project = {
   id: string;
@@ -38,8 +39,10 @@ export type Project = {
   role: string;
   tech: string[];
   result: string;
-  /** A short phrase inside `result` that gets the blue selection sweep. */
-  highlight: string;
+  /** One problem → result sentence, for the features that compress the table into a facts line. */
+  brief?: [problem: string, result: string];
+  /** A phrase inside `result` that gets the blue selection sweep. Rationed: only where it earns it. */
+  highlight?: string;
   href?: string; // TODO: live/demo links
   hrefLabel?: string;
   visual: ProjectVisual;
@@ -58,7 +61,6 @@ export const projects: Project[] = [
     role: "Workflow design, build",
     tech: ["n8n", "Ollama", "Agentic workflows", "Prompt engineering"],
     result: "Multi-step agentic orchestration that runs without hand-holding.",
-    highlight: "agentic orchestration",
     visual: "research-agent",
   },
   {
@@ -85,8 +87,11 @@ export const projects: Project[] = [
     role: "Product, UX, full-stack",
     tech: ["Next.js", "Supabase", "Prisma", "TypeScript"], // TODO: confirm stack
     result: "Deployed and in real use: a revenue-relevant product for small businesses.",
-    highlight: "revenue-relevant product",
-    visual: "counter-tilt",
+    brief: [
+      "Kirana and retail shops need billing, stock and GST filing without the complexity",
+      "deployed, and in real use by small businesses.",
+    ],
+    visual: "dashboard-zoom",
     image: "/projects/billzy.png",
   },
   {
@@ -94,12 +99,15 @@ export const projects: Project[] = [
     index: "04",
     name: "KIRO",
     problem: "AI tools multiply faster than anyone can keep track of them.",
-    build: "A directory of 200+ AI tools, built, curated and run solo.",
+    build: "A directory of 500+ AI tools, built, curated and run solo.",
     role: "Solo: design, build, curation",
     tech: ["Next.js", "Supabase", "Tailwind CSS"], // TODO: confirm stack
-    result: "200+ tools catalogued, from data model to daily upkeep.",
-    highlight: "200+ tools",
-    visual: "mosaic",
+    result: "500+ tools catalogued, from data model to daily upkeep.",
+    brief: [
+      "AI tools multiply faster than anyone can keep track of them",
+      "500+ catalogued and curated, from data model to daily upkeep, solo.",
+    ],
+    visual: "brand-specimen",
     image: "/projects/kiro.png",
   },
 ];
@@ -159,26 +167,31 @@ export const about = {
   statement:
     "I'm a full-stack developer who treats AI as a material, not a buzzword. I design the interface, build the backend, and wire in the automation — so a small team can run like a big one.",
   // Grouped by what the tool is for, not by how often it appears on a CV.
+  // Each cluster is set as display lines, broken by hand so every line fits at full weight
+  // without wrapping (the weight scrubs, so a line must never re-wrap mid-scroll).
   clusters: [
     {
       title: "Interface",
       note: "What people touch",
-      items: ["Next.js", "TypeScript", "Tailwind CSS"],
+      lines: [["Next.js", "TypeScript", "Tailwind CSS"]],
     },
     {
       title: "Systems",
       note: "What holds it up",
-      items: ["Supabase", "Prisma", "Socket.io", "MERN"],
+      lines: [["Supabase", "Prisma", "Socket.io", "MERN"]],
     },
     {
       title: "AI & Automation",
       note: "What runs on its own",
-      items: ["n8n", "Ollama", "Groq API", "Agentic AI", "Prompt engineering"],
+      lines: [
+        ["n8n", "Ollama", "Groq API"],
+        ["Agentic AI", "Prompt engineering"],
+      ],
     },
     {
       title: "Motion",
       note: "How it moves",
-      items: ["GSAP", "Framer Motion", "Lenis"],
+      lines: [["GSAP", "Framer Motion", "Lenis"]],
     },
   ],
 };

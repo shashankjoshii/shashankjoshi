@@ -70,17 +70,47 @@ export function Contact() {
           },
         );
 
-        gsap.fromTo(
+        // the knot's own scroll depth: it keeps drifting and swelling for as long as any part of the
+        // section is in view (not just while it's entering), so it reads as a background layer
+        // receding at its own rate the whole time you're here — the headline and CTAs below have no
+        // equivalent scroll transform of their own, so that difference in rate is what parallax is
+        const knotScroll = gsap.fromTo(
           ".contact-knot",
-          { yPercent: 25, scale: 0.7, opacity: 0 },
+          { yPercent: 30, scale: 0.65, opacity: 0 },
           {
-            yPercent: -10,
-            scale: 1,
+            yPercent: -45,
+            scale: 1.08,
             opacity: 1,
             ease: "none",
-            scrollTrigger: { trigger: root.current, start: "top bottom", end: "top top", scrub: true },
+            scrollTrigger: { trigger: root.current, start: "top bottom", end: "bottom top", scrub: true },
           },
         );
+
+        // cursor depth on top of the scroll drift: a small, damped offset (gsap.quickTo, ticked by
+        // the same gsap.ticker loop that drives Lenis and the knot's own 3D canvas — see Stage.tsx's
+        // FrameDriver) so the knot reads as sitting behind the headline/CTAs rather than pasted on.
+        const fine = window.matchMedia("(hover: hover) and (pointer: fine)");
+        let knotParallaxCleanup: (() => void) | undefined;
+        if (fine.matches) {
+          const knot = root.current!.querySelector<HTMLElement>(".contact-knot")!;
+          const kx = gsap.quickTo(knot, "x", { duration: 1, ease: "power3" });
+          const ky = gsap.quickTo(knot, "y", { duration: 1, ease: "power3" });
+          const onMove = (e: PointerEvent) => {
+            const r = root.current!.getBoundingClientRect();
+            kx(((e.clientX - r.left) / r.width - 0.5) * 22);
+            ky(((e.clientY - r.top) / r.height - 0.5) * 14);
+          };
+          const onLeave = () => {
+            kx(0);
+            ky(0);
+          };
+          root.current!.addEventListener("pointermove", onMove, { passive: true });
+          root.current!.addEventListener("pointerleave", onLeave);
+          knotParallaxCleanup = () => {
+            root.current!.removeEventListener("pointermove", onMove);
+            root.current!.removeEventListener("pointerleave", onLeave);
+          };
+        }
 
         gsap.from(".cta", {
           y: 40,
@@ -108,6 +138,9 @@ export function Contact() {
         return () => {
           wait?.kill();
           st.kill();
+          knotScroll.scrollTrigger?.kill();
+          knotScroll.kill();
+          knotParallaxCleanup?.();
         };
       });
     },
@@ -122,11 +155,12 @@ export function Contact() {
       className="on-blue relative isolate flex min-h-svh flex-col justify-between overflow-clip bg-accent px-4 pb-8 pt-28 text-white md:px-12 md:pt-36"
     >
       {/* a slow glass knot turning behind the headline: the page ends on depth, not a flat colour */}
-      {/* phones: the knot sits behind the type, so it is dimmed to keep the white text readable */}
-      <div aria-hidden className="absolute inset-0 -z-10 opacity-40 md:opacity-100">
+      {/* phones and tablets: the knot sits behind the type, so it stays small and dimmed to keep
+          the white text (and the Hire me CTA, which the full-size knot reaches at md) readable */}
+      <div aria-hidden className="absolute inset-0 -z-10 opacity-40 lg:opacity-100">
         <Scene3D
           kind="knot"
-          className="contact-knot absolute right-[-30%] top-[6%] h-[44svh] w-[90vw] md:right-[-8%] md:top-[6%] md:h-[78svh] md:w-[50vw]"
+          className="contact-knot absolute right-[-30%] top-[6%] h-[44svh] w-[90vw] lg:right-[-8%] lg:top-[6%] lg:h-[78svh] lg:w-[50vw]"
         />
       </div>
       <div>
@@ -145,14 +179,24 @@ export function Contact() {
       </div>
 
       <div>
-        <div className="contact-meta mt-16 grid gap-8 border-t border-white/25 pt-8 sm:grid-cols-2 md:grid-cols-4">
+        {/* 4 columns don't arrive until lg, and Email keeps extra share of that row (it's the
+            longest single word here) — at exactly 1024 four EQUAL columns are still too narrow
+            for the address and it wraps past the single @ break point below */}
+        <div className="contact-meta mt-16 grid gap-8 border-t border-white/25 pt-8 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr]">
           <div>
             <p className="label mb-2 text-white/85">Email</p>
             <a
               href={`mailto:${site.email}`}
-              className="inline-flex min-h-11 items-center break-all underline decoration-white/40 underline-offset-4 transition-colors hover:decoration-white"
+              className="inline-flex min-h-11 items-center [overflow-wrap:anywhere] underline decoration-white/40 underline-offset-4 transition-colors hover:decoration-white"
             >
-              {site.email}
+              {/* a real break opportunity at the @ (not mid-word) if the column is too narrow */}
+              {site.email.split("@").map((part, i) => (
+                <span key={i}>
+                  {i > 0 && <wbr />}
+                  {i > 0 && "@"}
+                  {part}
+                </span>
+              ))}
             </a>
           </div>
           <div>
@@ -196,7 +240,10 @@ export function Contact() {
 
         <footer className="mt-10 flex flex-wrap items-end justify-between gap-x-8 gap-y-4 border-t border-white/25 pt-8">
           <div>
-            <p className="display text-2xl [--wght:800]">{site.name}</p>
+            {/* small sizes need a wider cut and open tracking, or the condensed heavy glyphs clot */}
+            <p className="display text-[1.75rem] [--wdth:112] [--wght:760]" style={{ letterSpacing: "0.01em" }}>
+              {site.name}
+            </p>
             <p className="label mt-2 text-white/85">Full-stack developer and AI generalist</p>
           </div>
           <div className="label flex items-center gap-8 text-white/85">

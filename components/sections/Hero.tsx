@@ -86,9 +86,17 @@ export function Hero() {
         if (!motion) return;
 
         const name = section.querySelector<HTMLElement>(".hero-name")!;
+        const grid = section.querySelector<HTMLElement>(".hero-grid")!;
+        const orb = section.querySelector<HTMLElement>(".hero-orb")!;
         const chars = gsap.utils.toArray<HTMLElement>("[data-name] [data-inner]", section);
         const rest = gsap.utils.toArray<HTMLElement>(".hero-rest", section);
         const fade = gsap.utils.toArray<HTMLElement>(".hero-fade", section);
+
+        // "at rest" gates the cursor depth-parallax below: on the pinned path it must let go the
+        // instant the zoom-through engages (progress is only ever written to by that branch, so it
+        // stays 0 — always "at rest" — on the non-pinned path, where there is no exit to protect).
+        let progress = 0;
+        const atRest = () => progress < 0.001;
 
         // ---- entrance: letters rise through their masks while inflating from thin/narrow ----
         gsap.set(fade, { y: 24, opacity: 0 });
@@ -127,9 +135,48 @@ export function Hero() {
 
         const cleanups: Array<() => void> = [off, () => tl.kill()];
 
+        // ---- depth parallax: cursor moves the grid, orb and name at different rates, so the orb
+        // reads as sitting in real space behind the letters rather than pasted flat on top of them.
+        // Damped via gsap.quickTo (itself ticked by gsap.ticker, the same loop driving Lenis and the
+        // 3D canvases — see Stage.tsx's FrameDriver), so nothing snaps between pointer samples.
+        // Frozen the instant the zoom-through engages (atRest, above) and always live on the
+        // non-pinned path, where there is no exit to protect.
+        const fineForParallax = window.matchMedia("(hover: hover) and (pointer: fine)");
+        if (fineForParallax.matches) {
+          const layers = [
+            { el: grid, rateX: 3, rateY: 2 }, // furthest: barely moves
+            { el: orb, rateX: 8, rateY: 5 }, // middle
+            { el: name, rateX: 11, rateY: 6 }, // nearest — the focus, so it leads, but only a few px
+          ];
+          const setters = layers.map(({ el }) => ({
+            x: gsap.quickTo(el, "x", { duration: 0.9, ease: "power3" }),
+            y: gsap.quickTo(el, "y", { duration: 0.9, ease: "power3" }),
+          }));
+          const onMove = (e: PointerEvent) => {
+            if (!atRest()) return;
+            const nx = e.clientX / window.innerWidth - 0.5;
+            const ny = e.clientY / window.innerHeight - 0.5;
+            layers.forEach(({ rateX, rateY }, i) => {
+              setters[i].x(nx * rateX);
+              setters[i].y(ny * rateY);
+            });
+          };
+          const onLeave = () =>
+            layers.forEach((_, i) => {
+              setters[i].x(0);
+              setters[i].y(0);
+            });
+          section.addEventListener("pointermove", onMove, { passive: true });
+          section.addEventListener("pointerleave", onLeave);
+          cleanups.push(() => {
+            section.removeEventListener("pointermove", onMove);
+            section.removeEventListener("pointerleave", onLeave);
+          });
+        }
+
         if (pin) {
           // ---- exit: hold the viewport, swell the name and dive through the "o" of Joshi ----
-          let progress = 0;
+          // (progress and atRest are declared above, shared with the depth-parallax below)
           const o = section.querySelectorAll<HTMLElement>(".hero-l2 .mask")[1];
 
           // offset* ignores transforms, so this is valid at any scroll position; both boxes share
@@ -170,10 +217,16 @@ export function Hero() {
             defaults: { ease: "none" },
           });
           exit
+            // the cursor-parallax above stops updating once the exit engages (atRest goes false),
+            // so whatever small offset it last held is pinned here instead of drifting further
+            .set([grid, orb, name], { x: 0, y: 0 }, 0)
             .to(rest, { opacity: 0, y: -40, duration: 0.18 }, 0)
             // the graph paper leaves before the white-out, so the hand-off to the work is pure white
             .to(".hero-grid", { opacity: 0, duration: 0.4 }, 0.15)
             .to(".hero-orb", { opacity: 0, y: -60, duration: 0.35 }, 0.05)
+            // the ink turns accent as it swells, so the frame you pass through is designed blue,
+            // not an unstyled black flash; it is fully blue well before the glyph fills the screen
+            .to(name, { color: "#0038ff", duration: 0.4, ease: "power1.inOut" }, 0.15)
             .to(name, { scale: () => target(), duration: 1, ease: "power3.in", force3D: false }, 0);
 
           // the letters only reach their final widths once the entrance ends
@@ -189,7 +242,7 @@ export function Hero() {
             const field = attachWeightField(
               section,
               chars.filter((c) => !c.closest(".hero-role")),
-              { rest: REST, peak: PEAK, enabled: () => entered && progress === 0 },
+              { rest: REST, peak: PEAK, enabled: () => entered && atRest() },
             );
             cleanups.push(field);
           }
@@ -201,8 +254,13 @@ export function Hero() {
             { "--wght": REST.w, "--wdth": REST.d },
             { "--wght": 300, "--wdth": 80, ease: "none", scrollTrigger: st, immediateRender: false },
           );
+          // three-tier scroll depth to match the cursor parallax above: grid (furthest) drifts the
+          // least, the name (middle) a bit more, the orb (nearest, front-and-centre once the type
+          // has scrolled up past it) the most — the same ordering the existing name/orb rates
+          // already implied, just completed with the grid instead of it staying static.
           const drift = gsap.to(name, { yPercent: -14, ease: "none", scrollTrigger: st });
-          const orbDrift = gsap.to(".hero-orb", { yPercent: -18, opacity: 0, ease: "none", scrollTrigger: st });
+          const orbDrift = gsap.to(orb, { yPercent: -18, opacity: 0, ease: "none", scrollTrigger: st });
+          const gridDrift = gsap.to(grid, { yPercent: -6, opacity: 0, ease: "none", scrollTrigger: st });
           cleanups.push(() => {
             thin.scrollTrigger?.kill();
             thin.kill();
@@ -210,6 +268,8 @@ export function Hero() {
             drift.kill();
             orbDrift.scrollTrigger?.kill();
             orbDrift.kill();
+            gridDrift.scrollTrigger?.kill();
+            gridDrift.kill();
           });
         }
 
@@ -257,7 +317,7 @@ export function Hero() {
         <div className="hero-line mt-8 [@media(max-height:500px)]:mt-3 h-px origin-left bg-fg/30" />
 
         <div className="mt-6 [@media(max-height:500px)]:mt-3 grid gap-6 md:grid-cols-12 md:items-end">
-          <p className="hero-role text-lg font-medium text-fg md:col-span-4">
+          <p className="hero-role whitespace-nowrap text-lg font-medium text-fg md:col-span-5">
             <SplitReveal text={site.role} trigger="manual" />
           </p>
           <p className="hero-fade hero-p max-w-xl text-lg leading-snug text-muted md:col-span-6 md:col-start-7 md:text-xl">

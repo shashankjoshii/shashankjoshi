@@ -3,7 +3,7 @@
 :root {
   --bg: #ffffff;
   --fg: #0a0a0a;
-  --muted: #5c5c5c; /* 6.69:1 on white */
+  --muted: #404040; /* 10.4:1 on white: secondary copy still has to read with confidence */
   --dim: #8a8a8a; /* 3.45:1: large text only, and only as a transient state */
   --line: #e6e6e6;
   --surface: #f4f4f5;
@@ -35,6 +35,8 @@ body {
   font-size: 1.0625rem;
   /* body runs condensed with a raised x-height, so running text is tall too */
   font-variation-settings: "wdth" 72, "YTLC" 530;
+  /* a touch above regular: at wdth 72 the 400 stems read thin and grey */
+  font-weight: 430;
   letter-spacing: 0.005em;
   -webkit-font-smoothing: antialiased;
   overflow-x: clip;
@@ -58,6 +60,19 @@ html.lenis body {
 }
 .lenis.lenis-scrolling iframe {
   pointer-events: none;
+}
+
+/* Typed axes: registered as numbers so CSS can transition them (state-driven diagram words), not
+   only GSAP. Initial values match the fallbacks the .display rule has always used. */
+@property --wght {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 800;
+}
+@property --wdth {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 100;
 }
 
 /* Display type. wght/wdth are animated per-glyph, so they read from custom properties. */
@@ -185,4 +200,43 @@ svg [role="button"]:focus-visible [data-box] {
 .on-blue ::selection {
   background: #fff;
   color: var(--accent);
+}
+
+/* --- Mobile (nav / safe areas) ------------------------------------------------------------ */
+/* iOS inflates text in landscape unless told not to; the type scale is already fluid. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+/* Fixed top bar. layout.tsx sets viewport-fit=cover, so the bar pads itself clear of the notch and
+   rounded corners (env() is 0 everywhere else). Phones get a slim bar: 44px targets + 8px. */
+.nav-safe {
+  padding-top: max(0.5rem, env(safe-area-inset-top));
+  padding-bottom: 0.5rem;
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+@media (min-width: 640px) {
+  .nav-safe {
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+    padding-bottom: 0.75rem;
+  }
+}
+@media (min-width: 768px) {
+  .nav-safe {
+    padding-left: max(3rem, env(safe-area-inset-left));
+    padding-right: max(3rem, env(safe-area-inset-right));
+  }
+}
+/* Nav moves focus onto the section it scrolls to (tabindex -1); a ring around a whole section is
+   noise, the reader already sees where they landed. */
+[data-nav-target]:focus {
+  outline: none;
+}
+/* short landscape phones: every pixel of height counts */
+@media (max-height: 500px) {
+  .nav-safe {
+    padding-top: max(0.25rem, env(safe-area-inset-top));
+    padding-bottom: 0.25rem;
+  }
 }

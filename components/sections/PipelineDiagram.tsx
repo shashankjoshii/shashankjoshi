@@ -105,9 +105,42 @@ function Edge({ d, step }: { d: string; step: number }) {
   );
 }
 
+/**
+ * The route an edge will take, drawn as a faint dotted line so the whole pipeline is legible from
+ * the first frame. Motion only: hidden in the static (reduced-motion) markup, where the solid edge
+ * already says everything.
+ */
+function Track({ d }: { d: string }) {
+  return (
+    <path
+      data-track
+      d={d}
+      fill="none"
+      stroke={INK}
+      strokeOpacity={0.22}
+      strokeWidth={1.25}
+      strokeDasharray="2 5"
+      strokeLinecap="round"
+      opacity={0}
+    />
+  );
+}
+
+/** An edge with its dotted track underneath. */
+function Link({ d, step }: { d: string; step: number }) {
+  return (
+    <>
+      <Track d={d} />
+      <Edge d={d} step={step} />
+    </>
+  );
+}
+
 /** A node lit blue, or returned to rest. Only the node data is currently in is ever blue. */
 const LIT = { stroke: ACCENT, strokeOpacity: 1, fill: WHITE, duration: 0.25 };
 const REST = { stroke: INK, strokeOpacity: 0.25, fill: SURFACE, duration: 0.25 };
+/** Nodes the data hasn't reached yet: present, but ghosted, so the first pinned frame shows the whole route. */
+const GHOST = 0.34;
 
 /* -------------------------------------------------------------------------- */
 /*  AI Research Agent: question → planner → 3 researchers → synthesis          */
@@ -151,13 +184,13 @@ export function ResearchDiagram() {
         role="img"
         aria-label="AI Research Agent workflow: a question goes to a planner, fans out to three parallel researchers, then a synthesis step writes the report."
       >
-        <Edge step={1} d="M130 210 H175" />
-        <Edge step={2} d="M295 210 C330 210 330 80 360 80" />
-        <Edge step={2} d="M295 210 H360" />
-        <Edge step={2} d="M295 210 C330 210 330 340 360 340" />
-        <Edge step={3} d="M480 80 C520 80 520 210 570 210" />
-        <Edge step={3} d="M480 210 H570" />
-        <Edge step={3} d="M480 340 C520 340 520 210 570 210" />
+        <Link step={1} d="M130 210 H175" />
+        <Link step={2} d="M295 210 C330 210 330 80 360 80" />
+        <Link step={2} d="M295 210 H360" />
+        <Link step={2} d="M295 210 C330 210 330 340 360 340" />
+        <Link step={3} d="M480 80 C520 80 520 210 570 210" />
+        <Link step={3} d="M480 210 H570" />
+        <Link step={3} d="M480 340 C520 340 520 210 570 210" />
 
         <Node step={0} x={10} y={182} w={120} h={56} title="Question" sub="trigger" />
         <Node step={1} x={175} y={182} w={120} h={56} title="Planner" sub="plans angles" />
@@ -194,9 +227,12 @@ export function ResearchDiagram() {
           </text>
         ))}
 
-        {/* researcher progress bars */}
+        {/* researcher progress bars, over a grey track that only exists while the scene plays */}
         {[52, 182, 312].map((y) => (
-          <rect key={y} data-bar x={372} y={y + 64} width={96} height={3} rx={1.5} fill={ACCENT} />
+          <g key={y}>
+            <rect data-bar-track x={372} y={y + 64} width={96} height={3} rx={1.5} fill={INK} fillOpacity={0.1} opacity={0} />
+            <rect data-bar x={372} y={y + 64} width={96} height={3} rx={1.5} fill={ACCENT} />
+          </g>
         ))}
 
         {/* packets */}
@@ -234,8 +270,14 @@ function MNode({ title, sub, step }: { title: string; sub: string; step: number 
   );
 }
 
+/** A vertical link over a faint track; the track only shows while the scene plays. */
 function MLink({ step }: { step: number }) {
-  return <span data-m-link data-m-step={step} aria-hidden className="mx-auto block h-6 w-px origin-top bg-fg/35" />;
+  return (
+    <span aria-hidden className="relative mx-auto block h-6 w-px">
+      <span data-m-track className="absolute inset-0 bg-fg/15 opacity-0" />
+      <span data-m-link data-m-step={step} className="absolute inset-0 origin-top bg-fg/35" />
+    </span>
+  );
 }
 
 function ResearchStack() {
@@ -263,7 +305,10 @@ function ResearchStack() {
           >
             <p className="display text-[0.9375rem] leading-tight [--wght:700]">Researcher</p>
             <p className="text-[0.8125rem] leading-snug text-muted">angle {a}</p>
-            <span data-m-bar className="mx-auto mt-2 block h-[3px] w-4/5 origin-left rounded-full bg-accent" />
+            <span className="relative mx-auto mt-2 block h-[3px] w-4/5 overflow-hidden rounded-full">
+              <span data-m-track className="absolute inset-0 bg-fg/10 opacity-0" />
+              <span data-m-bar className="absolute inset-0 origin-left bg-accent" />
+            </span>
           </div>
         ))}
       </div>
@@ -277,40 +322,53 @@ function ResearchStack() {
   );
 }
 
-/** Scrubbed reveal for the phone layout. The un-animated markup is the finished (reduced-motion) state. */
+/**
+ * Scrubbed reveal for the phone layout, in the same three states as the desktop diagram: ghosted
+ * (not reached), blue (working), solid (done). Every node is on screen from the start.
+ * The un-animated markup is the finished (reduced-motion) state.
+ */
 export function buildResearchMobile(root: HTMLElement, scrollTrigger: ScrollTrigger.Vars) {
   const q = <T extends Element>(s: string) => gsap.utils.toArray<T>(s, root);
   const at = (sel: string, step: number) =>
     q<HTMLElement>(sel).filter((el) => Number(el.dataset.mStep) === step);
-  const nodes = q<HTMLElement>("[data-m-node]");
   const bars = q<HTMLElement>("[data-m-bar]");
-  const text = q<HTMLElement>("[data-m-text]");
   const summary = q<HTMLElement>("[data-m-summary]");
+  const [question] = at("[data-m-node]", 0);
 
+  gsap.set(q("[data-m-track]"), { opacity: 1 });
   gsap.set(
-    nodes.filter((n) => n.dataset.mStep !== "0"),
-    { opacity: 0, y: 10 },
+    q<HTMLElement>("[data-m-node]").filter((n) => n.dataset.mStep !== "0"),
+    { opacity: GHOST },
   );
+  gsap.set(question, { borderColor: ACCENT, backgroundColor: WHITE });
   gsap.set(q("[data-m-link]"), { scaleY: 0 });
   gsap.set(bars, { scaleX: 0 });
   gsap.set(summary, { opacity: 0, y: 6 });
-  gsap.set(text, { opacity: 0.4 });
 
   const tl = gsap.timeline({ defaults: { ease: "none" }, scrollTrigger });
-  const lit = (n: HTMLElement[], t: number, keep = false) => {
-    tl.to(n, { borderColor: ACCENT, backgroundColor: WHITE, duration: 0.2 }, t);
-    if (!keep) tl.to(n, { borderColor: REST_BORDER, backgroundColor: SURFACE, duration: 0.2 }, t + 0.7);
-  };
-  lit(at("[data-m-node]", 0), 0);
-  tl.to(text, { opacity: 1, duration: 0.3 }, 0.1);
-  for (let step = 1; step <= 3; step++) {
-    const t = step * 1.2;
-    tl.to(at("[data-m-link]", step), { scaleY: 1, duration: 0.3 }, t - 0.9);
-    tl.to(at("[data-m-node]", step), { opacity: 1, y: 0, duration: 0.4, stagger: 0.1 }, t - 0.6);
-    lit(at("[data-m-node]", step), t - 0.4, step === 3);
-    if (step === 2) tl.to(bars, { scaleX: 1, duration: 0.8, stagger: 0.1 }, t - 0.2);
-  }
-  tl.to(summary, { opacity: 1, y: 0, duration: 0.4 }, 3.9);
+  const arrive = (n: HTMLElement[], t: number) =>
+    tl.to(n, { opacity: 1, borderColor: ACCENT, backgroundColor: WHITE, duration: 0.25, stagger: 0.06 }, t);
+  const done = (n: HTMLElement[], t: number) =>
+    tl.to(n, { borderColor: REST_BORDER, backgroundColor: SURFACE, duration: 0.25 }, t);
+  const flow = (step: number, t: number) =>
+    tl.to(at("[data-m-link]", step), { scaleY: 1, duration: 0.45, ease: "power2.inOut" }, t);
+
+  flow(1, 0.3);
+  done([question], 0.6);
+  arrive(at("[data-m-node]", 1), 0.7);
+  flow(2, 1.2);
+  done(at("[data-m-node]", 1), 1.5);
+  arrive(at("[data-m-node]", 2), 1.6);
+  // the three work in parallel at their own pace, and each settles when its bar is full
+  const pace = [0.9, 1.3, 1.1];
+  const researchers = at("[data-m-node]", 2);
+  bars.forEach((b, i) => {
+    tl.to(b, { scaleX: 1, duration: pace[i], ease: "power1.inOut" }, 1.9 + i * 0.06);
+    done([researchers[i]], 1.9 + i * 0.06 + pace[i]);
+  });
+  flow(3, 3.25);
+  arrive(at("[data-m-node]", 3), 3.6);
+  tl.to(summary, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 3.9);
   tl.to({}, { duration: 0.3 });
   return tl;
 }
@@ -408,6 +466,10 @@ export function buildInvoiceMobile(
 /**
  * "Fan-out": one question becomes three parallel angles that travel together, get worked on at
  * once, then converge into a single write-up. Scrubbed; the caller owns the ScrollTrigger config.
+ *
+ * Three node states, so the scrub reads at a glance: ghosted (not reached yet), blue (working now),
+ * solid grey (done). Every node and route is on stage from the first frame; the data is what moves.
+ * The researchers finish at different times, and each angle leaves the moment its own work is done.
  * The un-animated markup already shows the finished diagram (the reduced-motion state).
  */
 export function buildResearchTimeline(root: HTMLElement, scrollTrigger: ScrollTrigger.Vars) {
@@ -420,7 +482,10 @@ export function buildResearchTimeline(root: HTMLElement, scrollTrigger: ScrollTr
   const [edgeQP] = byStep(edges, 1);
   const fanEdges = byStep(edges, 2);
   const mergeEdges = byStep(edges, 3);
-  const nodeAt = (step: number) => byStep(nodes, step);
+  const [question] = byStep(nodes, 0);
+  const [planner] = byStep(nodes, 1);
+  const researchers = byStep(nodes, 2);
+  const [synthesis] = byStep(nodes, 3);
   const bars = q<SVGRectElement>("[data-bar]");
   const packetQ = root.querySelector<SVGGElement>("[data-packet-q]")!;
   const fan = q<SVGGElement>("[data-packet-fan]");
@@ -430,74 +495,84 @@ export function buildResearchTimeline(root: HTMLElement, scrollTrigger: ScrollTr
   // box index by node order: 0 question, 1 planner, 2-4 researchers, 5 synthesis
   const boxOf = (node: SVGGElement) => boxes[nodes.indexOf(node)];
 
-  // the question is already on stage at the first frame, so the pinned card never opens empty
-  gsap.set(
-    nodes.filter((n) => Number(n.dataset.step) > 0),
-    { opacity: 0, scale: 0.9, transformBox: "fill-box", transformOrigin: "50% 50%" },
-  );
+  // first frame: the whole route is visible and ghosted, and the question is already live
+  gsap.set(q("[data-track], [data-bar-track]"), { opacity: 1 });
+  // no transformBox here: GSAP resolves SVG origins from the bbox itself, and adding fill-box on
+  // top offsets every in-between frame of a scale
+  gsap.set(nodes.slice(1), { opacity: GHOST, transformOrigin: "50% 50%" });
+  gsap.set(boxOf(question), { stroke: ACCENT, strokeOpacity: 1, fill: WHITE });
   gsap.set(edges, { strokeDashoffset: 100 });
-  gsap.set(bars, { scaleX: 0, transformBox: "fill-box", transformOrigin: "0% 50%" });
-  gsap.set(summary, { opacity: 0, y: 6 });
+  gsap.set(bars, { scaleX: 0, transformOrigin: "0% 50%" });
+  gsap.set(summary, { opacity: 0, y: 8 });
 
-  const ride = (tl: gsap.core.Timeline, pk: SVGGElement, path: SVGPathElement, at: number, dur: number) => {
-    tl.set(pk, { opacity: 1 }, at)
-      .to(
-        pk,
-        { motionPath: { path, align: path, alignOrigin: [0.5, 0.5] }, duration: dur, ease: "power1.inOut" },
-        at,
-      )
-      .set(pk, { opacity: 0 }, at + dur);
+  const tl: gsap.core.Timeline = gsap.timeline({ defaults: { ease: "none" } });
+
+  /** A packet rides its route while the route draws in under it, head and packet in step. */
+  const travel = (pk: SVGGElement, path: SVGPathElement, at: number, dur: number) => {
+    const ease = "power2.inOut";
+    tl.to(path, { strokeDashoffset: 0, duration: dur, ease }, at)
+      .to(pk, { opacity: 1, duration: 0.12 }, at)
+      .to(pk, { motionPath: { path, align: path, alignOrigin: [0.5, 0.5] }, duration: dur, ease }, at)
+      .to(pk, { opacity: 0, duration: 0.12 }, at + dur - 0.1);
   };
-  const appear = (tl: gsap.core.Timeline, target: gsap.TweenTarget, at: number) =>
-    tl.to(target, { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.6)", stagger: 0.1 }, at);
-  const light = (tl: gsap.core.Timeline, node: SVGGElement | SVGGElement[], at: number, keep = false) => {
-    const list = Array.isArray(node) ? node : [node];
-    list.forEach((n) => {
-      tl.to(boxOf(n), LIT, at);
-      if (!keep) tl.to(boxOf(n), REST, at + 0.9);
-    });
+  /** Data arrives: the node wakes from ghost to full, lights blue and gives one small beat. */
+  const arrive = (node: SVGGElement, at: number) => {
+    tl.to(node, { opacity: 1, duration: 0.2 }, at)
+      .to(boxOf(node), LIT, at)
+      .to(node, { scale: 1.045, duration: 0.14, ease: "power2.out" }, at)
+      .to(node, { scale: 1, duration: 0.3, ease: "power2.inOut" }, at + 0.14);
   };
+  const done = (node: SVGGElement, at: number) => tl.to(boxOf(node), REST, at);
+
+  // 1. the question goes to the planner
+  travel(packetQ, edgeQP, 0.35, 0.8);
+  done(question, 0.95);
+  arrive(planner, 1.1);
+
+  // 2. the planner splits it into three angles, which leave together on a slight stagger
+  const FAN = 1.6;
+  fan.forEach((pk, i) => travel(pk, fanEdges[i], FAN + i * 0.08, 1.0));
+  done(planner, FAN + 0.5);
+  researchers.forEach((r, i) => arrive(r, FAN + 0.95 + i * 0.08));
+
+  // 3. all three work at once, at their own pace; each angle leaves as soon as its work is done
+  const WORK = FAN + 1.2;
+  const pace = [1.15, 1.7, 1.4];
+  const finished = pace.map((p, i) => WORK + i * 0.08 + p);
+  bars.forEach((b, i) => tl.to(b, { scaleX: 1, duration: pace[i], ease: "power1.inOut" }, WORK + i * 0.08));
+  researchers.forEach((r, i) => {
+    done(r, finished[i]);
+    travel(merge[i], mergeEdges[i], finished[i] + 0.05, 0.8);
+  });
+
+  // 4. synthesis wakes on the first arrival, takes a beat for each one after, and stays live
+  const arrivals = finished.map((f) => f + 0.8).sort((a, b) => a - b);
+  arrive(synthesis, arrivals[0] - 0.05);
+  arrivals.slice(1).forEach((t) => {
+    tl.to(synthesis, { scale: 1.03, duration: 0.1, ease: "power2.out" }, t - 0.05).to(
+      synthesis,
+      { scale: 1, duration: 0.25, ease: "power2.inOut" },
+      t + 0.05,
+    );
+  });
+
+  // 5. the write-up
+  const last = arrivals[arrivals.length - 1];
+  tl.to(summary, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out", stagger: 0.28 }, last + 0.2);
+  // hold on the finished state so the section doesn't unpin the instant it lands
+  tl.to({}, { duration: 0.6 });
 
   // narrow screens scroll the diagram sideways; follow the action from left to right
   const scroller = root.querySelector<HTMLElement>("[data-lenis-prevent]");
-  const tl: gsap.core.Timeline = gsap.timeline({
-    defaults: { ease: "none" },
-    scrollTrigger,
-    onUpdate: () => {
-      if (scroller && scroller.scrollWidth > scroller.clientWidth) {
-        const p = Math.min(1, tl.time() / 6.4);
-        scroller.scrollLeft = p * (scroller.scrollWidth - scroller.clientWidth);
-      }
-    },
+  const total = tl.duration();
+  tl.eventCallback("onUpdate", () => {
+    if (scroller && scroller.scrollWidth > scroller.clientWidth) {
+      const p = Math.min(1, tl.time() / (total - 0.6));
+      scroller.scrollLeft = p * (scroller.scrollWidth - scroller.clientWidth);
+    }
   });
-
-  // 1. the question is asked
-  light(tl, nodeAt(0)[0], 0.2);
-
-  // 2. it goes to the planner
-  tl.to(edgeQP, { strokeDashoffset: 0, duration: 0.6 }, 0.9);
-  ride(tl, packetQ, edgeQP, 1.0, 0.7);
-  appear(tl, nodeAt(1), 1.5);
-  light(tl, nodeAt(1)[0], 1.7);
-
-  // 3. fan-out: three angles leave together
-  tl.to(fanEdges, { strokeDashoffset: 0, duration: 0.6 }, 2.4);
-  fan.forEach((pk, i) => ride(tl, pk, fanEdges[i], 2.5, 1.0));
-  appear(tl, nodeAt(2), 3.2);
-  light(tl, nodeAt(2), 3.5);
-
-  // 4. all three researchers work at the same time
-  tl.to(bars, { scaleX: 1, duration: 1.0, stagger: 0.12 }, 3.6);
-
-  // 5. converge into synthesis
-  tl.to(mergeEdges, { strokeDashoffset: 0, duration: 0.6 }, 4.9);
-  merge.forEach((pk, i) => ride(tl, pk, mergeEdges[i], 5.0, 0.9));
-  appear(tl, nodeAt(3), 5.5);
-  light(tl, nodeAt(3)[0], 5.8, true);
-
-  // 6. the write-up
-  tl.to(summary, { opacity: 1, y: 0, duration: 0.4, stagger: 0.25 }, 6.1);
-  tl.to({}, { duration: 0.5 });
+  // attach the scrub only once the whole scene is built, so its length is final
+  ScrollTrigger.create({ ...scrollTrigger, animation: tl });
   return tl;
 }
 
@@ -530,7 +605,7 @@ export function InvoiceDiagram({ stage }: { stage: number }) {
       <div className="hidden overflow-x-auto md:block" data-scroller data-lenis-prevent>
         <svg
           data-diagram
-          viewBox="0 0 900 360"
+          viewBox="0 58 900 292"
           className="mx-auto block h-auto w-full min-w-[680px]"
           role="group"
           aria-label="Invoice extraction pipeline: an invoice enters Google Drive, is read and extracted with Groq, validated and structured, then written back to Drive. Each stage can be inspected."
@@ -566,6 +641,18 @@ export function InvoiceDiagram({ stage }: { stage: number }) {
             </text>
             {SAMPLE_LINES.map((line, i) => (
               <g key={i}>
+                {/* where each field will land: a grey slot while the scene plays, invisible at rest */}
+                <rect
+                  data-skel
+                  x={0}
+                  y={i * 22 + 2}
+                  width={[168, 196, 132][i]}
+                  height={14}
+                  rx={3}
+                  fill={INK}
+                  fillOpacity={0.07}
+                  opacity={0}
+                />
                 <text
                   data-json-line
                   xmlSpace="preserve"
@@ -592,9 +679,9 @@ export function InvoiceDiagram({ stage }: { stage: number }) {
             ))}
           </g>
 
-          <Edge step={1} d="M180 158 H250" />
-          <Edge step={2} d="M420 158 H490" />
-          <Edge step={3} d="M660 158 H730" />
+          <Link step={1} d="M180 158 H250" />
+          <Link step={2} d="M420 158 H490" />
+          <Link step={3} d="M660 158 H730" />
 
           <Node step={0} x={10} y={100} w={170} h={116} low title="Drive" sub="invoice in" inspect={inspect(0)} />
           <Node step={1} x={250} y={100} w={170} h={116} low title="Groq" sub="OCR + extract" inspect={inspect(1)} />
@@ -615,6 +702,23 @@ export function InvoiceDiagram({ stage }: { stage: number }) {
             opacity={0}
             pointerEvents="none"
           />
+
+          {/* what Drive receives at the end: the record, not the document */}
+          <g transform="translate(810 128)" pointerEvents="none">
+            <g data-chip opacity={0}>
+            <rect x={-40} y={-12} width={80} height={24} rx={12} fill={ACCENT} />
+            <text
+              y={4.5}
+              textAnchor="middle"
+              fill={WHITE}
+              fontSize={13}
+              fontWeight={600}
+              fontFamily="var(--font-sans), sans-serif"
+            >
+              data.json
+            </text>
+            </g>
+          </g>
 
           {/* the invoice travelling through the pipeline */}
           <g data-doc transform="translate(95 130)" opacity={0} pointerEvents="none">
@@ -656,11 +760,11 @@ export function InvoiceDiagram({ stage }: { stage: number }) {
     </div>
   );
 }
-
 /**
- * "Document → data": the invoice is read at Groq, then consumed at Validate. Its fields lift off
- * and land as checked key/value rows, and the finished record (not the document) is what travels
- * on to Drive. The caller owns the ScrollTrigger config.
+ * "Document → data": the invoice drops into Drive, is read at Groq, then consumed at Validate. Its
+ * fields lift off and land in their slots as checked key/value rows, and the finished record (not
+ * the document) is what travels on and lands in Drive as data.json. The whole route is on stage,
+ * ghosted, from the first frame. The caller owns the ScrollTrigger config.
  */
 export function buildInvoiceTimeline(
   root: HTMLElement,
@@ -668,34 +772,55 @@ export function buildInvoiceTimeline(
   onStage?: (stage: number) => void,
 ) {
   const q = <T extends Element>(s: string) => gsap.utils.toArray<T>(s, root);
+  const nodes = q<SVGGElement>("[data-node]");
   const boxes = q<SVGRectElement>("[data-node] [data-box]");
   const doc = root.querySelector<SVGGElement>("[data-doc]")!;
+  const docInner = root.querySelector<SVGGElement>("[data-doc-inner]")!;
   const docLines = q<SVGRectElement>("[data-doc-line]");
   const scan = root.querySelector<SVGRectElement>("[data-scan]")!;
   const jsonLines = q<SVGTextElement>("[data-json-line]");
+  const slots = q<SVGRectElement>("[data-skel]");
   const checks = q<SVGPathElement>("[data-check]");
   const jsonTitle = root.querySelector<SVGTextElement>("[data-json-title]")!;
   const record = root.querySelector<SVGRectElement>("[data-record]")!;
+  const chip = root.querySelector<SVGGElement>("[data-chip]")!;
   const edges = q<SVGPathElement>("[data-edge]");
   const scroller = root.querySelector<HTMLElement>("[data-scroller]");
 
+  // first frame: the whole route, ghosted, with empty slots where the data will land
+  gsap.set(q("[data-track]"), { opacity: 1 });
+  gsap.set(nodes.slice(1), { opacity: GHOST, transformOrigin: "50% 50%" });
+  gsap.set(nodes[0], { transformOrigin: "50% 50%" });
+  gsap.set(boxes[0], { stroke: ACCENT, strokeOpacity: 1, fill: WHITE });
   gsap.set(edges, { strokeDashoffset: 100 });
   gsap.set(checks, { strokeDashoffset: 100 });
+  gsap.set(slots, { opacity: 1 });
   // the heading waits until the rows have landed, so no field flies through it
   gsap.set(jsonTitle, { opacity: 0 });
+  gsap.set(chip, { opacity: 0, scale: 0.6, transformOrigin: "50% 50%" });
   gsap.set(doc, { opacity: 1 }); // parked hidden in the static markup; it exists only while this plays
 
-  const HOP = 1.2;
-  const VALIDATE = HOP * 2; // the document reaches Validate
-  const SEND = VALIDATE + 2.9; // the record leaves for Drive
-  const END = SEND + 1.0;
+  const ARRIVE_GROQ = 1.6;
+  const ARRIVE_VALIDATE = 3.55;
+  const SEND = 5.55; // the record leaves for Drive
+  const LAND = SEND + 0.85;
 
-  const on = (tl: gsap.core.Timeline, i: number, at: number) => tl.to(boxes[i], LIT, at);
-  const off = (tl: gsap.core.Timeline, i: number, at: number) => tl.to(boxes[i], REST, at);
+  const arrive = (tl: gsap.core.Timeline, i: number, at: number) =>
+    tl
+      .to(nodes[i], { opacity: 1, duration: 0.2 }, at)
+      .to(boxes[i], LIT, at)
+      .to(nodes[i], { scale: 1.04, duration: 0.14, ease: "power2.out" }, at)
+      .to(nodes[i], { scale: 1, duration: 0.3, ease: "power2.inOut" }, at + 0.14);
+  const done = (tl: gsap.core.Timeline, i: number, at: number) => tl.to(boxes[i], REST, at);
+  /** The connection establishes first, then the document slides along it. */
+  const hop = (tl: gsap.core.Timeline, edge: SVGPathElement, x: number, at: number) =>
+    tl
+      .to(edge, { strokeDashoffset: 0, duration: 0.6, ease: "power2.inOut" }, at)
+      .to(doc, { x, duration: 0.85, ease: "power3.inOut" }, at + 0.1);
 
   // derived from the playhead, so it is correct when scrubbing backwards too
   let lastStage = -1;
-  const stageAt = (t: number) => (t < HOP + 0.1 ? 0 : t < VALIDATE + 0.1 ? 1 : t < SEND ? 2 : 3);
+  const stageAt = (t: number) => (t < ARRIVE_GROQ ? 0 : t < ARRIVE_VALIDATE ? 1 : t < LAND - 0.1 ? 2 : 3);
   const tl = gsap.timeline({
     defaults: { ease: "none" },
     scrollTrigger,
@@ -704,29 +829,34 @@ export function buildInvoiceTimeline(
       if (stage !== lastStage) onStage?.((lastStage = stage));
       // narrow screens scroll the diagram sideways; keep the travelling document in view
       if (scroller && scroller.scrollWidth > scroller.clientWidth) {
-        const p = Math.min(1, tl.time() / END);
+        const p = Math.min(1, tl.time() / LAND);
         scroller.scrollLeft = p * (scroller.scrollWidth - scroller.clientWidth);
       }
     },
   });
 
-  // Drive → Groq → Validate: the document travels
-  on(tl, 0, 0);
-  for (let i = 1; i <= 2; i++) {
-    const t = i * HOP;
-    tl.to(edges[i - 1], { strokeDashoffset: 0, duration: HOP * 0.6 }, t - HOP + 0.2);
-    tl.to(doc, { x: [240, 480][i - 1], duration: HOP, ease: "power1.inOut" }, t - HOP + 0.2);
-    off(tl, i - 1, t + 0.05);
-    on(tl, i, t + 0.1);
-  }
+  // 1. the invoice drops into the Drive folder
+  tl.fromTo(docInner, { y: -34, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: "power3.out" }, 0);
 
-  // Groq: a scan beam sweeps the page and the text lights up
-  tl.set(scan, { opacity: 1, y: 0 }, HOP + 0.1)
-    .to(scan, { y: 50, duration: 0.5, yoyo: true, repeat: 1 }, HOP + 0.1)
-    .to(docLines, { fill: ACCENT, fillOpacity: 0.9, stagger: 0.06, duration: 0.2 }, HOP + 0.3)
-    .set(scan, { opacity: 0 }, HOP + 1.15);
+  // 2. Drive → Groq
+  hop(tl, edges[0], 240, 0.65);
+  done(tl, 0, ARRIVE_GROQ - 0.05);
+  arrive(tl, 1, ARRIVE_GROQ);
 
-  // Validate: the fields lift off the document and land as key/value rows
+  // Groq: a scan beam sweeps the page and the text lights up line by line as it is read
+  const SCAN = ARRIVE_GROQ + 0.15;
+  tl.set(scan, { opacity: 1, y: 0 }, SCAN)
+    .to(scan, { y: 50, duration: 0.45, ease: "sine.inOut", yoyo: true, repeat: 1 }, SCAN)
+    .to(docLines, { fill: ACCENT, fillOpacity: 0.9, stagger: 0.08, duration: 0.18 }, SCAN + 0.05)
+    .set(scan, { opacity: 0 }, SCAN + 0.9);
+
+  // 3. Groq → Validate
+  hop(tl, edges[1], 480, ARRIVE_VALIDATE - 0.95);
+  done(tl, 1, ARRIVE_VALIDATE - 0.05);
+  arrive(tl, 2, ARRIVE_VALIDATE);
+
+  // Validate: the fields lift off the document and land in their slots as key/value rows
+  const LIFT = ARRIVE_VALIDATE + 0.15;
   tl.fromTo(
     jsonLines,
     { opacity: 0, x: 70, y: (i) => -(147 + 14 * i), scale: 0.6, fill: ACCENT },
@@ -736,32 +866,35 @@ export function buildInvoiceTimeline(
       y: 0,
       scale: 1,
       fill: INK,
-      transformBox: "fill-box",
       transformOrigin: "0% 50%",
       // bottom row first, and stagger > duration: each field lands before the next lifts off, and
       // never has to cross a row that has already landed
-      stagger: { each: 0.5, from: "end" },
-      duration: 0.45,
-      ease: "power2.out",
+      stagger: { each: 0.42, from: "end" },
+      duration: 0.4,
+      ease: "power3.out",
     },
-    VALIDATE + 0.2,
+    LIFT,
   )
-    .to(docLines, { fillOpacity: 0.12, stagger: 0.05, duration: 0.3 }, VALIDATE + 0.3)
-    .to(checks, { strokeDashoffset: 0, stagger: 0.18, duration: 0.3 }, VALIDATE + 1.8)
-    .to(doc, { opacity: 0, duration: 0.4 }, VALIDATE + 1.2)
-    .to(jsonTitle, { opacity: 1, duration: 0.3 }, VALIDATE + 1.7);
+    // each slot empties as its field lands in it
+    .to([...slots].reverse(), { opacity: 0, duration: 0.15, stagger: 0.42 }, LIFT + 0.3)
+    .to(docLines, { fillOpacity: 0.12, stagger: 0.05, duration: 0.3 }, LIFT + 0.1)
+    .to(doc, { opacity: 0, duration: 0.35 }, LIFT + 1.0)
+    .to(jsonTitle, { opacity: 1, duration: 0.3 }, LIFT + 1.25)
+    .to(checks, { strokeDashoffset: 0, stagger: 0.16, duration: 0.28, ease: "power2.out" }, LIFT + 1.35);
 
-  // the finished record (not the document) carries on to Drive
-  tl.fromTo(record, { opacity: 0 }, { opacity: 1, duration: 0.2 }, SEND - 0.2)
-    .to(edges[2], { strokeDashoffset: 0, duration: 0.6 }, SEND - 0.1)
+  // 4. the finished record (not the document) carries on to Drive
+  tl.fromTo(record, { opacity: 0 }, { opacity: 1, duration: 0.2 }, SEND - 0.25)
+    .to(edges[2], { strokeDashoffset: 0, duration: 0.6, ease: "power2.inOut" }, SEND - 0.1)
     // animate the rect's own geometry (not a transform): it shrinks to a chip and lands on Drive's
-    // upper half (810,127), clear of its label. scale + transformBox on a rect with x/y attributes throws GSAP's origin off.
-    .to(record, { attr: { x: 780, y: 114, width: 60, height: 26 }, duration: 0.8, ease: "power2.inOut" }, SEND)
-    .to(record, { opacity: 0, duration: 0.2 }, SEND + 0.6);
-  off(tl, 2, SEND + 0.5);
-  on(tl, 3, SEND + 0.7);
+    // upper half (810,128), clear of its label. scale + transformBox on a rect with x/y attributes throws GSAP's origin off.
+    .to(record, { attr: { x: 770, y: 116, width: 80, height: 24 }, duration: 0.85, ease: "power3.inOut" }, SEND)
+    // ...and becomes the labelled data.json it is
+    .to(record, { opacity: 0, duration: 0.15 }, LAND - 0.1)
+    .to(chip, { opacity: 1, scale: 1, duration: 0.35, ease: "back.out(2)" }, LAND - 0.12);
+  done(tl, 2, SEND + 0.3);
+  arrive(tl, 3, LAND - 0.1);
 
   // hold on the finished state so the section doesn't unpin the instant it lands
-  tl.to({}, { duration: 0.6 });
+  tl.to({}, { duration: 0.7 });
   return tl;
 }

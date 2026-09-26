@@ -10,6 +10,15 @@ function ScrollSync() {
   return null;
 }
 
+/**
+ * Lenis smooths the mouse wheel only. Touch scrolling stays native (syncTouch is off): momentum,
+ * rubber-banding and the iOS toolbar collapse all behave as the platform expects.
+ *
+ * The tree is the same with and without reduced motion. The reduced-motion answer only arrives
+ * after hydration (the server can't know it), and swapping the wrapper then would remount the
+ * whole page, re-running every GSAP context and WebGL scene. Instead Lenis stays mounted but inert:
+ * no smoothing, no RAF, native scroll.
+ */
 export function SmoothScroll({ children }: { children: React.ReactNode }) {
   const reduced = useReducedMotion();
   const lenisRef = useRef<LenisRef>(null);
@@ -31,13 +40,11 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("load", refresh);
   }, []);
 
-  if (reduced) return <>{children}</>;
-
   return (
     <ReactLenis
       root
       ref={lenisRef}
-      options={{ autoRaf: false, lerp: 0.1, smoothWheel: true }}
+      options={{ autoRaf: false, lerp: 0.1, smoothWheel: !reduced }}
     >
       <ScrollSync />
       {children}
@@ -45,13 +52,14 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Scroll to a selector/offset with Lenis when present, native otherwise. */
+/** Scroll to a selector/offset: eased with Lenis, instant under reduced motion. */
 export function useScrollTo() {
   const lenis = useLenis();
+  const reduced = useReducedMotion();
   return useCallback(
     (target: string | number) => {
       if (lenis) {
-        lenis.scrollTo(target, { duration: 1.6 });
+        lenis.scrollTo(target, reduced ? { immediate: true } : { duration: 1.6 });
         return;
       }
       if (typeof target === "number") {
@@ -60,6 +68,6 @@ export function useScrollTo() {
         document.querySelector(target)?.scrollIntoView();
       }
     },
-    [lenis],
+    [lenis, reduced],
   );
 }

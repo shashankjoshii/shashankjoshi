@@ -18,9 +18,23 @@ type Mode = "clear" | "away" | "solid";
 
 export function Nav() {
   const root = useRef<HTMLElement>(null);
+  const toggle = useRef<HTMLButtonElement>(null);
   const scrollTo = useScrollTo();
   const [mode, setMode] = useState<Mode>("clear");
   const [menu, setMenu] = useState(false); // phones only: the inline links are hidden below sm
+
+  /** Scroll to a section and move focus there, so keyboard and screen-reader users land with it
+   *  (the menu link they used is unmounted, which would otherwise drop focus onto <body>). */
+  const go = (href: string) => {
+    scrollTo(href);
+    const el = document.querySelector<HTMLElement>(href);
+    if (!el) return;
+    if (!el.hasAttribute("tabindex")) {
+      el.setAttribute("tabindex", "-1");
+      el.dataset.navTarget = "";
+    }
+    el.focus({ preventScroll: true });
+  };
 
   useEffect(() => {
     const pinned = window.matchMedia(HERO_PINNED);
@@ -45,14 +59,26 @@ export function Nav() {
 
   useEffect(() => {
     if (!menu) return;
-    const close = (e: KeyboardEvent | PointerEvent) => {
-      if (e instanceof KeyboardEvent ? e.key === "Escape" : !root.current?.contains(e.target as Node)) setMenu(false);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setMenu(false);
+      toggle.current?.focus(); // Escape hands focus back to the control that opened it
     };
-    window.addEventListener("keydown", close);
-    window.addEventListener("pointerdown", close);
+    const onPointer = (e: PointerEvent) => {
+      if (!root.current?.contains(e.target as Node)) setMenu(false);
+    };
+    // a dropdown left hanging over content the reader has scrolled to reads as a bug on phones
+    const startY = window.scrollY;
+    const onScroll = () => {
+      if (Math.abs(window.scrollY - startY) > 24) setMenu(false);
+    };
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("pointerdown", onPointer);
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
-      window.removeEventListener("keydown", close);
-      window.removeEventListener("pointerdown", close);
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("pointerdown", onPointer);
+      window.removeEventListener("scroll", onScroll);
     };
   }, [menu]);
 
@@ -79,7 +105,7 @@ export function Nav() {
     <header
       ref={root}
       data-mode={mode}
-      className={`pointer-events-none fixed inset-x-0 top-0 z-50 flex items-center justify-between px-4 py-3 [@media(max-height:500px)]:py-1 transition-[background-color,border-color,opacity,transform] duration-300 md:px-12 ${
+      className={`nav-safe pointer-events-none fixed inset-x-0 top-0 z-50 flex items-center justify-between transition-[background-color,border-color,opacity,transform] duration-300 ${
         mode === "solid" ? "border-b border-line bg-bg/95 backdrop-blur" : "border-b border-transparent"
       } ${mode === "away" ? "!opacity-0" : ""}`}
     >
@@ -101,7 +127,7 @@ export function Nav() {
             href={item.href}
             onClick={(e) => {
               e.preventDefault();
-              scrollTo(item.href);
+              go(item.href);
             }}
             className="label hidden min-h-11 min-w-11 items-center justify-center text-fg transition-opacity hover:opacity-60 sm:inline-flex"
           >
@@ -109,6 +135,7 @@ export function Nav() {
           </a>
         ))}
         <button
+          ref={toggle}
           type="button"
           aria-expanded={menu}
           aria-controls="mobile-menu"
@@ -138,7 +165,7 @@ export function Nav() {
                 onClick={(e) => {
                   e.preventDefault();
                   setMenu(false);
-                  scrollTo(item.href);
+                  go(item.href);
                 }}
                 className="label flex min-h-11 items-center px-4 text-fg"
               >

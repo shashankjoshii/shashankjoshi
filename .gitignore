@@ -28,6 +28,9 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# local Claude Code tooling state (skills cache, worktrees) — not site content
+/.claude/
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)

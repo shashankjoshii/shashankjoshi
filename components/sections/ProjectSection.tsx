@@ -13,8 +13,8 @@ import {
   buildResearchMobile,
   buildInvoiceMobile,
 } from "./PipelineDiagram";
-import { TiltShot, buildTilt } from "./moments/TiltShot";
-import { MosaicShot, buildMosaic, useMosaicGrid } from "./moments/MosaicShot";
+import { DashboardZoom, buildDashboardZoom } from "./moments/DashboardZoom";
+import { BrandSpecimen, buildBrandSpecimen } from "./moments/BrandSpecimen";
 
 // Pinning needs the whole section to fit in the viewport, otherwise the bottom is cut off mid-pin.
 const CAN_PIN = "(min-width: 1024px) and (min-height: 820px)";
@@ -23,13 +23,21 @@ const WIDE = "(min-width: 768px)";
 
 /** Scroll distance (as % of the viewport) each pinned moment holds the screen for. */
 const PIN_LENGTH: Partial<Record<Project["visual"], number>> = {
-  "research-agent": 160,
+  "research-agent": 200,
   "invoice-pipeline": 360,
-  mosaic: 110,
 };
+/** The product projects break the shared template: a facts line and a full-width feature. */
+const isFeature = (v: Project["visual"]) =>
+  v === "dashboard-zoom" || v === "brand-specimen";
 
 /** One editorial metadata row: label column + value. */
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+function Row({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="p-row grid grid-cols-[4.75rem_1fr] gap-4 py-3 sm:grid-cols-[5.5rem_1fr]">
       <dt className="label pt-px text-muted">{label}</dt>
@@ -38,10 +46,39 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
+/** The table compressed to one line: role · stack, then problem → result. */
+function Facts({ project }: { project: Project }) {
+  const [problem, result] = project.brief ?? [project.problem, project.result];
+  return (
+    <div className="p-dl max-w-xl">
+      <p className="p-row label text-muted">
+        <span className="text-fg">{project.role}</span>
+        <span aria-hidden> · </span>
+        {project.tech.join(", ")}
+      </p>
+      <p className="p-row mt-3 text-[1.1rem] leading-snug text-muted md:text-[1.2rem]">
+        {problem}
+        <span className="text-accent"> &rarr; </span>
+        <span className="text-fg">{result}</span>
+      </p>
+      {project.href && (
+        <a
+          href={project.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="p-row mt-4 inline-flex min-h-11 items-center font-semibold text-accent underline underline-offset-8"
+        >
+          {project.hrefLabel ?? "View live"}
+        </a>
+      )}
+    </div>
+  );
+}
+
 /** The result sentence, with its key phrase picked out by the blue selection sweep. */
-function Result({ text, highlight }: { text: string; highlight: string }) {
-  const at = text.indexOf(highlight);
-  if (at < 0) return <span className="text-fg">{text}</span>;
+function Result({ text, highlight }: { text: string; highlight?: string }) {
+  const at = highlight ? text.indexOf(highlight) : -1;
+  if (!highlight || at < 0) return <span className="text-fg">{text}</span>;
   return (
     <span className="text-fg">
       {text.slice(0, at)}
@@ -64,8 +101,9 @@ export function ProjectSection({
 }) {
   const root = useRef<HTMLElement>(null);
   const visual = useRef<HTMLDivElement>(null);
+  const feature = useRef<HTMLDivElement>(null);
   const [stage, setStage] = useState(0);
-  const grid = useMosaicGrid();
+  const featured = isFeature(project.visual);
 
   const prevNumber = String(index).padStart(2, "0");
 
@@ -75,7 +113,11 @@ export function ProjectSection({
 
       mm.add({ motion: MOTION_OK, pin: CAN_PIN, wide: WIDE }, (ctx) => {
         // GSAP runs this when ANY condition matches, so motion has to be checked explicitly
-        const { motion, pin, wide } = ctx.conditions as { motion: boolean; pin: boolean; wide: boolean };
+        const { motion, pin, wide } = ctx.conditions as {
+          motion: boolean;
+          pin: boolean;
+          wide: boolean;
+        };
         if (!motion) return;
         const section = root.current!;
 
@@ -84,31 +126,77 @@ export function ProjectSection({
         // on phones a scrubbed roll leaves two clipped digits overlapping mid-view, so the current
         // number just sits there.
         if (wide) {
-          const roll = { trigger: section, start: "top 95%", end: "top 25%", scrub: true };
+          const roll = {
+            trigger: section,
+            start: "top 95%",
+            end: "top 25%",
+            scrub: true,
+          };
           gsap.set(".p-digit-out", { visibility: "visible" });
-          gsap.fromTo(".p-digit-in", { yPercent: 100 }, { yPercent: 0, ease: "none", scrollTrigger: roll });
-          gsap.fromTo(".p-digit-out", { yPercent: 0 }, { yPercent: -100, ease: "none", scrollTrigger: roll });
+          gsap.fromTo(
+            ".p-digit-in",
+            { yPercent: 100 },
+            { yPercent: 0, ease: "none", scrollTrigger: roll },
+          );
+          gsap.fromTo(
+            ".p-digit-out",
+            { yPercent: 0 },
+            { yPercent: -100, ease: "none", scrollTrigger: roll },
+          );
         }
 
-        // ---- depth: the ghost numeral drifts slower than the page, the visual tilts toward the pointer
+        // ---- depth: the outlined numeral drifts slower than the page and inflates from hairline to
+        // heavy as it passes (the site's weight motif); the visual tilts toward the pointer
         const ghost = gsap.fromTo(
           ".p-ghost",
-          { yPercent: 30 },
-          { yPercent: -30, ease: "none", scrollTrigger: { trigger: section, start: "top bottom", end: "bottom top", scrub: true } },
+          { yPercent: 30, "--wght": 150, "--wdth": 80 },
+          {
+            yPercent: -30,
+            "--wght": 900,
+            "--wdth": 100,
+            ease: "none",
+            scrollTrigger: {
+              trigger: section,
+              start: "top bottom",
+              end: "bottom top",
+              scrub: true,
+            },
+          },
         );
-        const cleanups: Array<() => void> = [() => { ghost.scrollTrigger?.kill(); ghost.kill(); }];
-        if (window.matchMedia("(hover: hover) and (pointer: fine)").matches && visual.current?.parentElement) {
+        const cleanups: Array<() => void> = [
+          () => {
+            ghost.scrollTrigger?.kill();
+            ghost.kill();
+          },
+        ];
+        if (
+          !featured &&
+          window.matchMedia("(hover: hover) and (pointer: fine)").matches &&
+          visual.current?.parentElement
+        ) {
           // the wrapper, not the visual: the moments animate transforms on the visual itself
           const card = visual.current.parentElement;
-          gsap.set(card, { transformPerspective: 1400, transformStyle: "preserve-3d" });
-          const rx = gsap.quickTo(card, "rotationX", { duration: 0.8, ease: "power3.out" });
-          const ry = gsap.quickTo(card, "rotationY", { duration: 0.8, ease: "power3.out" });
+          gsap.set(card, {
+            transformPerspective: 1400,
+            transformStyle: "preserve-3d",
+          });
+          const rx = gsap.quickTo(card, "rotationX", {
+            duration: 0.8,
+            ease: "power3.out",
+          });
+          const ry = gsap.quickTo(card, "rotationY", {
+            duration: 0.8,
+            ease: "power3.out",
+          });
           const move = (e: PointerEvent) => {
             const r = card.getBoundingClientRect();
             ry(((e.clientX - r.left) / r.width - 0.5) * 7);
             rx(-((e.clientY - r.top) / r.height - 0.5) * 5);
           };
-          const leave = () => { rx(0); ry(0); };
+          const leave = () => {
+            rx(0);
+            ry(0);
+          };
           card.addEventListener("pointermove", move);
           card.addEventListener("pointerleave", leave);
           cleanups.push(() => {
@@ -128,7 +216,14 @@ export function ProjectSection({
         const showRows = () => {
           if (shown) return;
           shown = true;
-          gsap.to(rows, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out", stagger: 0.08, overwrite: true });
+          gsap.to(rows, {
+            y: 0,
+            opacity: 1,
+            duration: 0.8,
+            ease: "power3.out",
+            stagger: 0.08,
+            overwrite: true,
+          });
         };
         ScrollTrigger.create({
           trigger: section.querySelector(".p-dl"),
@@ -137,11 +232,20 @@ export function ProjectSection({
           onEnter: showRows,
         });
         // belt and braces: if the section is well into view and the trigger never fired, show anyway
-        ScrollTrigger.create({ trigger: section, start: "top 40%", once: true, onEnter: showRows });
+        ScrollTrigger.create({
+          trigger: section,
+          start: "top 40%",
+          once: true,
+          onEnter: showRows,
+        });
 
         // stacked sheets: this section slides over the previous one, which settles back.
         // Real elements, not a selector string: the previous section is outside this scope.
-        const prevInner = prevId ? document.getElementById(prevId)?.querySelector<HTMLElement>(".p-inner") : null;
+        const prevInner = prevId
+          ? document
+              .getElementById(prevId)
+              ?.querySelector<HTMLElement>(".p-inner")
+          : null;
         if (prevInner) {
           gsap.fromTo(
             prevInner,
@@ -150,7 +254,12 @@ export function ProjectSection({
               scale: 0.95,
               opacity: 0.5,
               ease: "none",
-              scrollTrigger: { trigger: section, start: "top bottom", end: "top top", scrub: true },
+              scrollTrigger: {
+                trigger: section,
+                start: "top bottom",
+                end: "top top",
+                scrub: true,
+              },
             },
           );
         }
@@ -178,22 +287,44 @@ export function ProjectSection({
               };
 
         if (project.visual === "research-agent")
-          (wide ? buildResearchTimeline : buildResearchMobile)(visual.current!, trigger);
+          (wide ? buildResearchTimeline : buildResearchMobile)(
+            visual.current!,
+            trigger,
+          );
         if (project.visual === "invoice-pipeline")
-          (wide ? buildInvoiceTimeline : buildInvoiceMobile)(visual.current!, trigger, setStage);
-        if (project.visual === "mosaic") buildMosaic(visual.current!, trigger);
-        if (project.visual === "counter-tilt")
-          buildTilt(visual.current!, {
-            trigger: visual.current,
-            start: "top 90%",
-            end: wide ? "top 30%" : "top 55%",
-            scrub: 0.6,
-          });
+          (wide ? buildInvoiceTimeline : buildInvoiceMobile)(
+            visual.current!,
+            trigger,
+            setStage,
+          );
+        // the features scrub through the section as it passes; nothing pins
+        if (project.visual === "dashboard-zoom")
+          cleanups.push(
+            buildDashboardZoom(
+              feature.current!,
+              {
+                trigger: feature.current,
+                start: wide ? "top 88%" : "top 90%",
+                end: wide ? "top 12%" : "top 40%",
+                scrub: 0.6,
+              },
+              !wide,
+            ),
+          );
+        if (project.visual === "brand-specimen")
+          cleanups.push(
+            buildBrandSpecimen(feature.current!, {
+              trigger: feature.current,
+              start: "top 92%",
+              end: wide ? "top 30%" : "top 45%",
+              scrub: 0.6,
+            }),
+          );
 
         return () => cleanups.forEach((fn) => fn());
       });
     },
-    { scope: root, dependencies: [grid.cols] },
+    { scope: root },
   );
 
   return (
@@ -208,7 +339,7 @@ export function ProjectSection({
         {/* a huge blue numeral behind everything, drifting at its own speed: a second plane of depth */}
         <span
           aria-hidden
-          className="p-ghost display pointer-events-none absolute -right-[4vw] top-[6%] select-none text-[clamp(14rem,42vw,44rem)] leading-none text-accent/[0.06] [--wght:800]"
+          className="p-ghost display pointer-events-none absolute -right-[4vw] top-[6%] select-none text-[clamp(14rem,42vw,44rem)] leading-none text-transparent [-webkit-text-stroke:1.5px_rgb(0_56_255/0.55)] [--wdth:90] [--wght:520] max-md:-right-[20vw] max-md:top-[1%] max-md:text-[clamp(9rem,46vw,13rem)] max-md:opacity-50 md:max-lg:right-[1vw] md:max-lg:text-[25vw]"
         >
           {project.index}
         </span>
@@ -218,8 +349,13 @@ export function ProjectSection({
               Project {index + 1} of {total}
             </span>
             <span aria-hidden>Project</span>
-            <span aria-hidden className="relative inline-block h-[1.4em] overflow-hidden tabular-nums">
-              <span className="p-digit-in block leading-[1.4] text-accent">{project.index}</span>
+            <span
+              aria-hidden
+              className="relative inline-block h-[1.4em] overflow-hidden tabular-nums"
+            >
+              <span className="p-digit-in block leading-[1.4] text-accent">
+                {project.index}
+              </span>
               <span className="p-digit-out invisible absolute inset-x-0 top-0 block leading-[1.4]">
                 {prevNumber}
               </span>
@@ -231,61 +367,78 @@ export function ProjectSection({
             className={`display ${
               PIN_LENGTH[project.visual]
                 ? "text-[clamp(2.8rem,min(8.5vw,14svh),9rem)]"
-                : "text-[clamp(3rem,min(12vw,22svh),13rem)]"
+                : "text-[clamp(3rem,min(11vw,19svh),12rem)]"
             }`}
           >
             <SplitReveal text={project.name} />
           </h2>
-          {project.alias && <p className="mt-3 text-sm text-muted">{project.alias}</p>}
+          {project.alias && (
+            <p className="mt-3 text-sm text-muted">{project.alias}</p>
+          )}
+          {featured && (
+            <div className="mt-6 lg:mt-8">
+              <Facts project={project} />
+            </div>
+          )}
         </div>
 
-        <div className="relative mt-8 grid w-full grid-cols-1 items-center gap-10 lg:mt-10 lg:grid-cols-12 lg:gap-10">
-          <div className="min-w-0 lg:col-span-4">
-            <dl className="p-dl max-w-md divide-y divide-line border-y border-line">
-              <Row label="Problem">{project.problem}</Row>
-              <Row label="Build">{project.build}</Row>
-              <Row label="Role">{project.role}</Row>
-              <Row label="Stack">
-                <span className="text-fg">{project.tech.join(", ")}</span>
-              </Row>
-              <Row label="Result">
-                <Result text={project.result} highlight={project.highlight} />
-              </Row>
-            </dl>
-
-            {project.href && (
-              <a
-                href={project.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-8 inline-flex min-h-11 items-center font-semibold text-accent underline underline-offset-8"
-              >
-                {project.hrefLabel ?? "View live"}
-              </a>
+        {featured && project.image && (
+          <div ref={feature} className="relative mt-10 lg:mt-12">
+            {project.visual === "dashboard-zoom" && (
+              <DashboardZoom
+                src={project.image}
+                alt={`${project.name} dashboard`}
+              />
+            )}
+            {project.visual === "brand-specimen" && (
+              <BrandSpecimen src={project.image} name={project.name} />
             )}
           </div>
+        )}
 
-          <div className="relative min-w-0 lg:col-span-8">
-            <div ref={visual}>
-              {project.visual === "counter-tilt" && project.image && (
-                <TiltShot src={project.image} alt={`${project.name} screenshot`} />
-              )}
-              {project.visual === "mosaic" && project.image && (
-                <MosaicShot src={project.image} alt={`${project.name} screenshot`} grid={grid} />
-              )}
-              {project.visual === "research-agent" && (
-                <div className="rounded-[6px] border border-line bg-surface p-4 md:p-6">
-                  <ResearchDiagram />
-                </div>
-              )}
-              {project.visual === "invoice-pipeline" && (
-                <div className="rounded-[6px] border border-line bg-surface p-4 md:p-6">
-                  <InvoiceDiagram stage={stage} />
-                </div>
+        {!featured && (
+          <div className="relative mt-8 grid w-full grid-cols-1 items-center gap-10 lg:mt-10 lg:grid-cols-12 lg:gap-10">
+            <div className="min-w-0 lg:col-span-4">
+              <dl className="p-dl max-w-md divide-y divide-line border-y border-line">
+                <Row label="Problem">{project.problem}</Row>
+                <Row label="Build">{project.build}</Row>
+                <Row label="Role">{project.role}</Row>
+                <Row label="Stack">
+                  <span className="text-fg">{project.tech.join(", ")}</span>
+                </Row>
+                <Row label="Result">
+                  <Result text={project.result} highlight={project.highlight} />
+                </Row>
+              </dl>
+
+              {project.href && (
+                <a
+                  href={project.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-8 inline-flex min-h-11 items-center font-semibold text-accent underline underline-offset-8"
+                >
+                  {project.hrefLabel ?? "View live"}
+                </a>
               )}
             </div>
+
+            <div className="relative min-w-0 lg:col-span-8">
+              <div ref={visual}>
+                {project.visual === "research-agent" && (
+                  <div className="rounded-[6px] border border-line bg-surface p-4 md:p-6">
+                    <ResearchDiagram />
+                  </div>
+                )}
+                {project.visual === "invoice-pipeline" && (
+                  <div className="rounded-[6px] border border-line bg-surface p-4 md:p-6">
+                    <InvoiceDiagram stage={stage} />
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </section>
   );

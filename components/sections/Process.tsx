@@ -10,6 +10,13 @@ const CAN_PIN = "(min-width: 1024px) and (min-height: 820px)";
 
 const HEAVY = { w: 800, d: 100 };
 const LIGHT = { w: 300, d: 82 };
+const DIM = "#8a8a8a";
+// Phone-sized titles can't go that thin: hairline stems at ~2rem break up and pick up colour
+// fringing, so the resting state stays a readable medium weight in a darker grey.
+const LIGHT_NARROW = { w: 460, d: 88 };
+const DIM_NARROW = "#6b6b6b";
+// tablets and touch laptops too: hairlines break up on coarse-pointer screens at these sizes
+const NARROW = "(max-width: 1023px), (pointer: coarse)";
 
 /**
  * How I build. Weight follows attention: the step you are reading is heavy and black, the rest
@@ -24,9 +31,11 @@ export function Process() {
     () => {
       const mm = gsap.matchMedia();
 
-      mm.add({ motion: MOTION_OK, pin: CAN_PIN }, (ctx) => {
-        const { motion, pin } = ctx.conditions as { motion: boolean; pin: boolean };
+      mm.add({ motion: MOTION_OK, pin: CAN_PIN, narrow: NARROW }, (ctx) => {
+        const { motion, pin, narrow } = ctx.conditions as { motion: boolean; pin: boolean; narrow: boolean };
         if (!motion) return;
+        const light = narrow ? LIGHT_NARROW : LIGHT;
+        const dim = narrow ? DIM_NARROW : DIM;
 
         const steps = gsap.utils.toArray<HTMLElement>(".step", root.current);
         const titles = steps.map((s) => s.querySelector<HTMLElement>(".step-title")!);
@@ -35,7 +44,7 @@ export function Process() {
 
         // every step but the first starts thin and grey
         titles.forEach((t, i) => {
-          if (i) gsap.set(t, { "--wght": LIGHT.w, "--wdth": LIGHT.d, color: "#8a8a8a" });
+          if (i) gsap.set(t, { "--wght": light.w, "--wdth": light.d, color: dim });
         });
         // bodies only swap while pinned; unpinned, all stay readable and only the weight scrubs
         if (pin) gsap.set(bodies.slice(1), { opacity: 0 });
@@ -69,7 +78,7 @@ export function Process() {
           const at = (i - 0.35) * slice;
           const d = 0.5 * slice;
           // the step that was heavy lets go...
-          tl.to(titles[i - 1], { "--wght": LIGHT.w, "--wdth": LIGHT.d, color: "#8a8a8a", duration: d }, at)
+          tl.to(titles[i - 1], { "--wght": light.w, "--wdth": light.d, color: dim, duration: d }, at)
             // ...and this one takes the weight
             .to(titles[i], { "--wght": HEAVY.w, "--wdth": HEAVY.d, color: "#0a0a0a", duration: d }, at)
             .to(rules[i], { scaleX: 1, duration: d }, at);

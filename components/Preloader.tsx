@@ -60,7 +60,7 @@ export function Preloader() {
     <div
       ref={root}
       aria-hidden
-      className="preloader fixed inset-0 z-[80] flex items-end bg-bg p-4 md:p-10"
+      className="preloader fixed inset-0 z-[80] flex items-end bg-bg p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] md:p-10"
     >
       <span
         ref={count}
