@@ -3,6 +3,7 @@ import { Roboto_Flex } from "next/font/google";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { Cursor } from "@/components/Cursor";
 import { LightField } from "@/components/LightField";
+import { JsonLd } from "@/components/JsonLd";
 import { site } from "@/lib/content";
 import { seo } from "@/lib/seo";
 import "./globals.css";
@@ -55,6 +56,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={flex.variable}>
       <body>
+        <JsonLd />
         <LightField />
         <SmoothScroll>{children}</SmoothScroll>
         <Cursor />
