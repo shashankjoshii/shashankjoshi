@@ -168,7 +168,7 @@ export function Contact() {
           id="contact-title"
           className="contact-head display text-[min(21vw,30svh)] [--wdth:100] [--wght:800]"
         >
-          <span className="block whitespace-nowrap">Let&apos;s build</span>
+          <span className="block whitespace-nowrap">Let&apos;s build</span>{" "}
           <span className="block whitespace-nowrap">something.</span>
         </h2>
       </div>

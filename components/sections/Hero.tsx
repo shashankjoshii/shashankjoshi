@@ -305,7 +305,7 @@ export function Hero() {
           <h1 aria-label={site.name}>
             <span className="hero-l1 block">
               <SplitReveal text="Shashank" by="chars" trigger="manual" className="block whitespace-nowrap" />
-            </span>
+            </span>{" "}
             <span className="hero-l2 block pl-[34%]">
               <SplitReveal text="Joshi" by="chars" trigger="manual" className="block whitespace-nowrap" />
             </span>
