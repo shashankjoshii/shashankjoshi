@@ -127,6 +127,8 @@ export function About() {
         ))}
       </h2>
 
+      <p className="mt-10 max-w-2xl text-lg leading-relaxed text-muted md:mt-14 md:text-xl">{about.summary}</p>
+
       <h3 className="label mt-24 text-muted md:mt-32">What I work with</h3>
       <ul className="skill-list mt-6">
         {about.clusters.map((c, i) => (
