@@ -182,7 +182,7 @@ export function Contact() {
         {/* 4 columns don't arrive until lg, and Email keeps extra share of that row (it's the
             longest single word here) — at exactly 1024 four EQUAL columns are still too narrow
             for the address and it wraps past the single @ break point below */}
-        <div className="contact-meta mt-16 grid gap-8 border-t border-white/25 pt-8 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr]">
+        <div className="contact-meta mt-16 grid gap-8 border-t border-white/25 pt-8 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr]">
           <div>
             <p className="label mb-2 text-white/85">Email</p>
             <a
@@ -214,16 +214,6 @@ export function Contact() {
                 </a>
               )}
             </p>
-          </div>
-          <div>
-            <p className="label mb-2 text-white/85">Studio</p>
-            {site.links.nirmata ? (
-              <a href={site.links.nirmata} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center underline decoration-white/40 underline-offset-4 transition-colors hover:decoration-white">
-                {site.studio}
-              </a>
-            ) : (
-              <p className="flex min-h-11 items-center">{site.studio}</p>
-            )}
           </div>
           <div>
             <p className="label mb-2 text-white/85">Availability</p>

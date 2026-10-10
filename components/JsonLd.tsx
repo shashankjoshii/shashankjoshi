@@ -39,7 +39,6 @@ const graph = [
       addressCountry: seo.countryCode,
     },
     homeLocation: { "@type": "City", name: seo.city },
-    worksFor: { "@type": "Organization", name: site.studio },
     knowsAbout: [...new Set(about.clusters.flatMap((c) => c.lines.flat()))],
     sameAs: [site.links.github, site.links.linkedin],
   },

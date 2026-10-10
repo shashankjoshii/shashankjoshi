@@ -18,7 +18,6 @@ ${about.summary}
 - Email: ${site.email}
 - GitHub: ${site.links.github}
 - LinkedIn: ${site.links.linkedin}
-- Studio: ${site.studio} (freelance and business work)
 - Availability: ${currently.availableFor}
 
 ## Skills

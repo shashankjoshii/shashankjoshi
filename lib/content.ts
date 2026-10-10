@@ -6,16 +6,14 @@ export const site = {
   role: "Full-Stack Developer & AI Generalist",
   positioning:
     "I build products that ship and automations that run — for shops, studios and teams that need real results, not demos.",
-  studio: "Nirmata Designs",
   location: "Ahmedabad", // city, region and country for search live in lib/seo.ts
   timezone: "Asia/Kolkata",
   email: "shashankjoshi.imscit20@gmail.com",
   links: {
     github: "https://github.com/shashankjoshii",
     linkedin: "https://www.linkedin.com/in/shashankrjoshi/",
-    // Empty = not shown. Set to "/resume.pdf" (file in /public) or the studio URL to bring them back.
+    // Empty = not shown. Set to "/resume.pdf" (file in /public) to bring it back.
     resume: "",
-    nirmata: "",
   },
 };
 
@@ -167,7 +165,7 @@ export const about = {
   // Plain third-person summary: who, what, where, stack. Shown on the page and reused by llms.txt
   // and the JSON-LD description, so search engines and AI assistants read the same facts.
   summary:
-    "Shashank Joshi is a full-stack developer based in Ahmedabad, India. He builds with Next.js, TypeScript, Supabase and Prisma, and automates with n8n, Ollama and the Groq API. Through his studio, Nirmata Designs, he builds web products and AI automations for small businesses, including Billzy, a GST invoicing and inventory app for retail shops, and KIRO, a directory of 500+ AI tools.",
+    "Shashank Joshi is a full-stack developer based in Ahmedabad, India. He builds with Next.js, TypeScript, Supabase and Prisma, and automates with n8n, Ollama and the Groq API. He ships web products and AI automations for small businesses, including Billzy, a GST invoicing and inventory app for retail shops, and KIRO, a directory of 500+ AI tools.",
   statement:
     "I'm a full-stack developer who treats AI as a material, not a buzzword. I design the interface, build the backend, and wire in the automation — so a small team can run like a big one.",
   // Grouped by what the tool is for, not by how often it appears on a CV.
@@ -210,8 +208,8 @@ export const contact = {
   headline: "Let's build something.",
   business: {
     label: "Start a project",
-    note: `Business inquiry via ${site.studio}`,
-    href: `mailto:${site.email}?subject=${encodeURIComponent("Project inquiry — Nirmata Designs")}`,
+    note: "Business inquiry",
+    href: `mailto:${site.email}?subject=${encodeURIComponent("Project inquiry")}`,
   },
   hire: {
     label: "Hire me",
