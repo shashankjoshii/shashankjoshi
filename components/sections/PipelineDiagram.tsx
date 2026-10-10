@@ -40,7 +40,7 @@ function Node({
     ? {
         role: "button" as const,
         tabIndex: 0,
-        "aria-label": inspect.label,
+        "aria-label": `${inspect.label}. ${sub}`,
         style: { cursor: "pointer" },
         onPointerEnter: (e: React.PointerEvent) => e.pointerType === "mouse" && inspect.onOn(),
         onPointerLeave: (e: React.PointerEvent) => e.pointerType === "mouse" && inspect.onOff(),
@@ -406,7 +406,6 @@ function InvoiceStack({
             )}
             <button
               type="button"
-              aria-label={p.label}
               aria-pressed={on}
               onClick={p.onOn}
               className={`grid min-h-14 w-full grid-cols-[5.75rem_1fr] items-center gap-2 rounded-[12px] border px-3 py-2 text-left transition-colors ${

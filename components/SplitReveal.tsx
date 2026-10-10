@@ -53,10 +53,15 @@ export function SplitReveal({
   );
 
   const words = text.split(" ");
+  // aria-label is only valid on elements with a role that takes a name. Headings do; a bare
+  // span/p/div does not (screen readers drop the label and read nothing, since the words below are
+  // aria-hidden), so those become a labelled img. The visible text stays single-copy in the HTML.
+  const isHeading = Tag === "h1" || Tag === "h2" || Tag === "h3";
 
   return (
     <Tag
       ref={root as never}
+      role={isHeading ? undefined : "img"}
       aria-label={text}
       className={className}
     >

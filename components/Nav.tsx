@@ -116,7 +116,7 @@ export function Nav() {
           scrollTo(0);
         }}
         className="display pointer-events-auto inline-flex min-h-11 min-w-11 items-center text-2xl text-fg [--wght:800]"
-        aria-label="Back to top"
+        aria-label="SJ, back to top"
       >
         SJ
       </a>
