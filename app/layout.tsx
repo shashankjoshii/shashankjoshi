@@ -4,6 +4,7 @@ import { SmoothScroll } from "@/components/SmoothScroll";
 import { Cursor } from "@/components/Cursor";
 import { LightField } from "@/components/LightField";
 import { site } from "@/lib/content";
+import { seo } from "@/lib/seo";
 import "./globals.css";
 
 // One tall variable family for everything. Roboto Flex runs from ultra-condensed to wide on its
@@ -17,13 +18,27 @@ const flex = Roboto_Flex({
 });
 
 export const metadata: Metadata = {
-  title: `${site.name} — ${site.role}`,
-  description: site.positioning,
+  metadataBase: new URL(seo.url),
+  title: seo.title,
+  description: seo.description,
+  keywords: seo.keywords,
+  authors: [{ name: site.name, url: seo.url }],
+  creator: site.name,
+  alternates: { canonical: "/" },
   openGraph: {
-    title: `${site.name} — ${site.role}`,
-    description: site.positioning,
+    title: seo.title,
+    description: seo.description,
+    url: "/",
+    siteName: site.name,
+    locale: "en_IN",
     type: "website",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: seo.title,
+    description: seo.description,
+  },
+  robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {
