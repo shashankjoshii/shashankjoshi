@@ -190,6 +190,85 @@ svg [role="button"]:focus-visible [data-box] {
   }
 }
 
+/* Preloader: the count, weight swell and bar run from first paint with no JS. Nothing here waits for
+   hydration, which is what used to hold the hero (and the page's LCP) back by ~2s on phones.
+   - pre-failsafe lifts the curtain by itself at 2.6s if scripts are slow or never arrive.
+   - Preloader.tsx adds [data-lift] once the count is done and the page has hydrated; a different
+     animation name restarts the lift from zero, so it plays at the right moment. */
+@property --n {
+  syntax: "<integer>";
+  inherits: false;
+  initial-value: 0;
+}
+.preloader {
+  animation: pre-failsafe 0.7s cubic-bezier(0.87, 0, 0.13, 1) 2.6s both;
+}
+.preloader[data-lift] {
+  animation: pre-lift 0.7s cubic-bezier(0.87, 0, 0.13, 1) 0.15s both;
+}
+.pre-count {
+  counter-reset: n var(--n);
+  animation:
+    pre-count 0.8s cubic-bezier(0.45, 0, 0.25, 1) both,
+    pre-weight 0.8s cubic-bezier(0.45, 0, 0.25, 1) both;
+}
+.pre-count::after {
+  content: counter(n) "%";
+}
+/* same two animations stay listed, so the count doesn't restart; the fade is added on top */
+.preloader[data-lift] .pre-count {
+  animation:
+    pre-count 0.8s cubic-bezier(0.45, 0, 0.25, 1) both,
+    pre-weight 0.8s cubic-bezier(0.45, 0, 0.25, 1) both,
+    pre-out 0.25s ease-in both;
+}
+.pre-bar {
+  animation: pre-bar 0.8s cubic-bezier(0.45, 0, 0.25, 1) both;
+}
+@keyframes pre-count {
+  from {
+    --n: 0;
+  }
+  to {
+    --n: 100;
+  }
+}
+@keyframes pre-weight {
+  from {
+    --wght: 200;
+    --wdth: 75;
+  }
+  to {
+    --wght: 800;
+    --wdth: 100;
+  }
+}
+@keyframes pre-bar {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes pre-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes pre-lift {
+  to {
+    transform: translateY(-100%);
+    visibility: hidden;
+  }
+}
+@keyframes pre-failsafe {
+  to {
+    transform: translateY(-100%);
+    visibility: hidden;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .preloader {
     display: none;

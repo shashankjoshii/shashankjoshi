@@ -1,60 +1,66 @@
 "use client";
 
-import { useRef } from "react";
-import { gsap, useGSAP, MOTION_OK } from "@/lib/gsap";
-import { markReady } from "@/lib/ready";
+import { useEffect, useRef } from "react";
+import { curtainGone, markReady } from "@/lib/ready";
 
+/**
+ * Intro curtain. The count, the weight swell and the bar are pure CSS (see "Preloader" in
+ * globals.css), so they start at first paint instead of waiting for hydration, and a CSS fail-safe
+ * lifts the curtain on its own if scripts are slow or fail. This component only does the part CSS
+ * can't: wait for the count to finish *and* the page to hydrate, lift the curtain, release scroll,
+ * and signal `markReady` so the hero entrance can start while the curtain is still clearing.
+ */
 export function Preloader() {
   const root = useRef<HTMLDivElement>(null);
   const count = useRef<HTMLSpanElement>(null);
-  const bar = useRef<HTMLDivElement>(null);
 
-  useGSAP(
-    () => {
-      const mm = gsap.matchMedia();
+  useEffect(() => {
+    const el = root.current;
+    if (!el) return;
 
-      mm.add(MOTION_OK, () => {
-        const html = document.documentElement;
-        html.style.overflow = "hidden";
-        const n = { v: 0 };
+    // reduced motion: the curtain is display:none in CSS, nothing to wait for
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || curtainGone()) {
+      markReady();
+      return;
+    }
 
-        const tl = gsap.timeline({
-          onComplete: () => {
-            html.style.overflow = "";
-            gsap.set(root.current, { display: "none" });
-          },
-        });
-        tl.to(n, {
-          v: 100,
-          duration: 1.1,
-          ease: "power2.inOut",
-          onUpdate: () => {
-            if (count.current) count.current.textContent = `${Math.round(n.v)}%`;
-          },
-        })
-          .to(bar.current, { scaleX: 1, duration: 1.1, ease: "power2.inOut" }, 0)
-          // the count thickens as it climbs: the site's weight motif, introduced in the first second
-          .fromTo(
-            count.current,
-            { "--wght": 200, "--wdth": 75 },
-            { "--wght": 800, "--wdth": 100, duration: 1.1, ease: "power2.inOut" },
-            0,
-          )
-          .to(".pre-fade", { opacity: 0, duration: 0.3, ease: "power2.in" }, 1.15)
-          .to(root.current, { yPercent: -100, duration: 0.8, ease: "expo.inOut" }, 1.25)
-          .add(markReady, 1.6);
+    // slow device: the CSS fail-safe is already lifting the curtain, so don't restart it
+    const failsafe = el.getAnimations().find((a) => (a as CSSAnimation).animationName === "pre-failsafe");
+    const progress = failsafe?.effect?.getComputedTiming().progress;
+    if (progress != null && progress > 0) {
+      const t = window.setTimeout(markReady, 250);
+      return () => window.clearTimeout(t);
+    }
 
-        return () => {
-          html.style.overflow = "";
-        };
-      });
+    const html = document.documentElement;
+    let cancelled = false;
+    let timer = 0;
+    html.style.overflow = "hidden";
 
-      mm.add("(prefers-reduced-motion: reduce)", () => {
-        markReady();
-      });
-    },
-    { scope: root },
-  );
+    const end = (e: AnimationEvent) => {
+      if (e.target !== el) return;
+      el.style.display = "none";
+      html.style.overflow = "";
+    };
+
+    const lift = () => {
+      if (cancelled) return;
+      el.addEventListener("animationend", end);
+      el.dataset.lift = "";
+      // the hero starts rising while the curtain is still clearing
+      timer = window.setTimeout(markReady, 300);
+    };
+
+    const counting = count.current?.getAnimations() ?? [];
+    void Promise.allSettled(counting.map((a) => a.finished)).then(lift);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      el.removeEventListener("animationend", end);
+      html.style.overflow = "";
+    };
+  }, []);
 
   return (
     <div
@@ -62,14 +68,14 @@ export function Preloader() {
       aria-hidden
       className="preloader fixed inset-0 z-[80] flex items-end bg-bg p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] md:p-10"
     >
+      {/* the digits are generated content (counter(n) in CSS), so they are not a text node: the
+          curtain can never become the page's largest contentful paint */}
       <span
         ref={count}
-        className="pre-fade display text-[22vw] leading-none text-fg tabular-nums md:text-[12vw]"
-      >
-        0%
-      </span>
+        className="pre-count display text-[22vw] leading-none text-fg tabular-nums md:text-[12vw]"
+      />
       <div className="absolute inset-x-0 bottom-0 h-px bg-line">
-        <div ref={bar} className="h-full origin-left scale-x-0 bg-accent" />
+        <div className="pre-bar h-full origin-left bg-accent" />
       </div>
     </div>
   );

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { gsap, ScrollTrigger, useGSAP, MOTION_OK } from "@/lib/gsap";
-import { onReady } from "@/lib/ready";
+import { curtainGone, onReady } from "@/lib/ready";
 import { attachWeightField } from "@/lib/weightField";
 import { site } from "@/lib/content";
 import { SplitReveal } from "../SplitReveal";
@@ -101,11 +101,18 @@ export function Hero() {
         let progress = 0;
         const atRest = () => progress < 0.001;
 
+        // On a slow device hydration can finish after the CSS fail-safe has already lifted the
+        // curtain. The server-rendered name is then on screen: hiding it to replay the entrance
+        // would flash it out and back in, so it is left exactly as painted.
+        const skipIntro = curtainGone();
+
         // ---- entrance: letters rise through their masks while inflating from thin/narrow ----
-        gsap.set(fade, { y: 24, opacity: 0 });
-        gsap.set(".hero-line", { scaleX: 0 });
-        gsap.set(".hero-role [data-inner]", { yPercent: 115 });
-        gsap.set(".hero-p .sweep", { "--k": 0 });
+        if (!skipIntro) {
+          gsap.set(fade, { y: 24, opacity: 0 });
+          gsap.set(".hero-line", { scaleX: 0 });
+          gsap.set(".hero-role [data-inner]", { yPercent: 115 });
+          gsap.set(".hero-p .sweep", { "--k": 0 });
+        }
 
         // ---- no layout shift while the letters inflate ----
         // Each mask is as wide as its glyph, so as the weight/width tween ran every letter pushed all
@@ -150,31 +157,33 @@ export function Hero() {
             m.style.overflowY = "";
             m.style.translate = "";
           });
-        lockLayout();
+        if (!skipIntro) lockLayout();
 
         const tl = gsap.timeline({ paused: true, defaults: { ease: "power4.out" } });
-        tl.fromTo(
-          chars,
-          { "--wght": START.w, "--wdth": START.d },
-          {
-            "--wght": REST.w,
-            "--wdth": REST.d,
-            duration: 1.5,
-            ease: "back.out(1.3)",
-            stagger: 0.045,
-          },
-          0,
-        )
-          .to(chars, { yPercent: 0, duration: 1.3, stagger: 0.045 }, 0)
-          .to(".hero-line", { scaleX: 1, duration: 1.4, ease: "expo.inOut" }, 0.5)
-          .to(".hero-role [data-inner]", { yPercent: 0, duration: 1, stagger: 0.06 }, 0.8)
-          .to(fade, { y: 0, opacity: 1, duration: 1 }, 1.1)
-          .to(".hero-p .sweep", { "--k": 1, duration: 0.9, ease: "power3.inOut" }, 1.7);
+        if (!skipIntro) {
+          tl.fromTo(
+            chars,
+            { "--wght": START.w, "--wdth": START.d },
+            {
+              "--wght": REST.w,
+              "--wdth": REST.d,
+              duration: 1.5,
+              ease: "back.out(1.3)",
+              stagger: 0.045,
+            },
+            0,
+          )
+            .to(chars, { yPercent: 0, duration: 1.3, stagger: 0.045 }, 0)
+            .to(".hero-line", { scaleX: 1, duration: 1.4, ease: "expo.inOut" }, 0.5)
+            .to(".hero-role [data-inner]", { yPercent: 0, duration: 1, stagger: 0.06 }, 0.8)
+            .to(fade, { y: 0, opacity: 1, duration: 1 }, 1.1)
+            .to(".hero-p .sweep", { "--k": 1, duration: 0.9, ease: "power3.inOut" }, 1.7);
+        }
 
         tl.eventCallback("onUpdate", slideLetters);
 
         // the font can still arrive after this point; re-measure the slots before the entrance starts
-        let started = false;
+        let started = skipIntro; // nothing to re-measure when there is no entrance to play
         let cancelled = false;
         void document.fonts?.ready.then(() => {
           if (cancelled || started) return;
@@ -193,10 +202,12 @@ export function Hero() {
           gsap.set(chars, { willChange: "auto" });
           onEntered();
         });
-        const off = onReady(() => {
-          started = true;
-          tl.play();
-        });
+        const off = skipIntro
+          ? () => {}
+          : onReady(() => {
+              started = true;
+              tl.play();
+            });
 
         const cleanups: Array<() => void> = [
           off,
@@ -346,6 +357,12 @@ export function Hero() {
             gridDrift.scrollTrigger?.kill();
             gridDrift.kill();
           });
+        }
+
+        // no entrance to wait for: the letters are already at their final widths
+        if (skipIntro) {
+          entered = true;
+          onEntered();
         }
 
         return () => cleanups.forEach((fn) => fn());
