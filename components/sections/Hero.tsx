@@ -297,10 +297,12 @@ export function Hero() {
       {/* graph-paper texture: hero only, faint, fading out toward the edges */}
       <div aria-hidden className="hero-grid pointer-events-none absolute inset-0 -z-10" />
 
-      {/* the liquid-glass orb: 3D depth behind the type, so the name sits in front of something */}
+      {/* the liquid-glass orb: 3D depth behind the type, so the name sits in front of something.
+          The camera fits the canvas height, so on tall narrow viewports the height is capped at
+          width/0.95 (54vw/0.95 = 56.8vw); otherwise the sphere would be cut by the canvas edge. */}
       <Scene3D
         kind="orb"
-        className="hero-orb absolute -z-[5] left-1/2 top-[9%] h-[36svh] w-[78vw] -translate-x-1/2 md:left-auto md:right-[-3%] md:top-[5%] md:h-[74svh] md:w-[54vw] md:translate-x-0 [@media(max-height:500px)]:hidden"
+        className="hero-orb absolute -z-[5] left-1/2 top-[9%] h-[36svh] w-[78vw] -translate-x-1/2 md:left-auto md:right-[-3%] md:top-[5%] md:h-[min(74svh,56.8vw)] md:w-[54vw] md:translate-x-0 [@media(max-height:500px)]:hidden"
       />
 
       <div className="relative">
