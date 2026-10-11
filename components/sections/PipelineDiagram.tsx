@@ -762,9 +762,20 @@ export function InvoiceDiagram({ stage }: { stage: number }) {
           <p className="font-semibold text-accent">{info.phase}</p>
           <p className="label mt-1 text-muted">Step {shown + 1} of 4</p>
         </div>
-        <div>
-          <p className="display text-xl leading-tight [--wght:700]">{info.title}</p>
-          <p className="mt-1 max-w-md text-sm leading-snug text-muted">{info.detail}</p>
+        <div className="grid">
+          {/* Invisible copies of every stage in the same cell reserve the tallest one's height, so
+              the panel (and the whole page below it) stays the same height as the stage changes.
+              On a phone the longer details wrap to another line and used to push everything down. */}
+          {invoiceStages.map((s) => (
+            <div key={s.phase} aria-hidden className="invisible col-start-1 row-start-1">
+              <p className="display text-xl leading-tight [--wght:700]">{s.title}</p>
+              <p className="mt-1 max-w-md text-sm leading-snug text-muted">{s.detail}</p>
+            </div>
+          ))}
+          <div className="col-start-1 row-start-1">
+            <p className="display text-xl leading-tight [--wght:700]">{info.title}</p>
+            <p className="mt-1 max-w-md text-sm leading-snug text-muted">{info.detail}</p>
+          </div>
         </div>
       </div>
     </div>
