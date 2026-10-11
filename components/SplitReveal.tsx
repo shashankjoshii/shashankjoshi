@@ -2,20 +2,24 @@
 
 import { useRef } from "react";
 import { gsap, useGSAP, MOTION_OK } from "@/lib/gsap";
-import { curtainGone } from "@/lib/ready";
 
 type Props = {
   text: string;
   by?: "words" | "chars";
   /**
    * "scroll": animates itself when scrolled into view.
-   * "manual": stays hidden (motion only) until a parent timeline animates `[data-inner]`.
+   * "manual": does nothing itself; the parent's stylesheet animates `[data-inner]` (the hero).
    */
   trigger?: "scroll" | "manual";
   as?: "h1" | "h2" | "h3" | "p" | "span" | "div";
   className?: string;
   stagger?: number;
   delay?: number;
+  /**
+   * For CSS-driven entrances: numbers every letter (or word) from this value as `--i`, which the
+   * stylesheet turns into the stagger delay. Only the hero uses it.
+   */
+  indexBase?: number;
 };
 
 /** Masked line/word/char reveal. Splits by hand — no paid SplitText. */
@@ -27,6 +31,7 @@ export function SplitReveal({
   className,
   stagger,
   delay = 0,
+  indexBase,
 }: Props) {
   const root = useRef<HTMLElement>(null);
 
@@ -34,14 +39,13 @@ export function SplitReveal({
     () => {
       const mm = gsap.matchMedia();
       mm.add(MOTION_OK, () => {
-        // manual reveals belong to the hero: if the intro curtain already lifted before hydration
-        // (slow device), the parent skips its entrance, so the server-painted text must stay put
-        if (trigger === "manual" && curtainGone()) return;
+        // "manual" belongs to the hero, whose entrance is CSS-driven (see "Hero entrance" in
+        // globals.css): the starting state is in the stylesheet, so there is nothing to set here
+        if (trigger === "manual") return;
         const inner = gsap.utils.toArray<HTMLElement>("[data-inner]", root.current);
         // y: 0 too, so a stale px offset parsed from an earlier inline transform (strict-mode re-run)
         // can never add to the percentage
         gsap.set(inner, { y: 0, yPercent: 115 });
-        if (trigger === "manual") return;
         gsap.to(inner, {
           y: 0,
           yPercent: 0,
@@ -57,6 +61,9 @@ export function SplitReveal({
   );
 
   const words = text.split(" ");
+  let n = indexBase ?? 0; // running letter/word number for the CSS stagger
+  const idx = (): React.CSSProperties | undefined =>
+    indexBase === undefined ? undefined : ({ "--i": n++ } as React.CSSProperties);
   // aria-label is only valid on elements with a role that takes a name. Headings do; a bare
   // span/p/div does not (screen readers drop the label and read nothing, since the words below are
   // aria-hidden), so those become a labelled img. The visible text stays single-copy in the HTML.
@@ -74,12 +81,16 @@ export function SplitReveal({
           {by === "chars" ? (
             [...word].map((ch, j) => (
               <span key={j} className="mask">
-                <span data-inner>{ch}</span>
+                <span data-inner style={idx()}>
+                  {ch}
+                </span>
               </span>
             ))
           ) : (
             <span className="mask">
-              <span data-inner>{word}</span>
+              <span data-inner style={idx()}>
+                {word}
+              </span>
             </span>
           )}
           {i < words.length - 1 && <span>&nbsp;</span>}

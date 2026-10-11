@@ -20,11 +20,18 @@ export const MOTION_REDUCED = "(prefers-reduced-motion: reduce)";
 
 let pending = 0;
 
-function whenIdle(job: () => void): () => void {
+/** Run `job` when the browser is idle (in queue order). Returns a cancel function. */
+export function whenIdle(job: () => void): () => void {
   let cancelled = false;
   pending++;
   const run = () => {
-    if (!cancelled) job();
+    if (!cancelled) {
+      job();
+      // GSAP initialises new tweens lazily, in the next animation frame: without this every section's
+      // timelines would pile into one ~100 ms frame. Rendering now keeps each section's share inside
+      // its own idle task.
+      gsap.ticker.tick();
+    }
     if (--pending === 0) ScrollTrigger.refresh();
   };
   if (typeof window.requestIdleCallback === "function") {

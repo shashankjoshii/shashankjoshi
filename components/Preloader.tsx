@@ -47,8 +47,13 @@ export function Preloader() {
       if (cancelled) return;
       el.addEventListener("animationend", end);
       el.dataset.lift = "";
-      // the hero starts rising while the curtain is still clearing
-      timer = window.setTimeout(markReady, 300);
+      // the hero starts rising while the curtain is still clearing. data-intro is what starts the
+      // CSS entrance (see "Hero entrance" in globals.css); it is only set on this path, never when
+      // the CSS fail-safe lifted the curtain, because switching animations late would replay them.
+      timer = window.setTimeout(() => {
+        document.documentElement.dataset.intro = "1";
+        markReady();
+      }, 300);
     };
 
     const counting = count.current?.getAnimations() ?? [];

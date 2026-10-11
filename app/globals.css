@@ -303,6 +303,92 @@ svg [role="button"]:focus-visible [data-box] {
   }
 }
 
+/* Hero entrance: pure CSS, so no JS runs per frame while it plays (the GSAP version made every
+   animation frame a ~60 ms task on a slow machine). Same choreography as before: letters rise
+   through their masks (stagger 35 ms), the rule and positioning line follow at +0.3 s, the role
+   words at +0.45 s, and the blue sweep at +0.9 s.
+   - Hidden from first paint with no JS: the *-fs animations sit on their first keyframe during
+     their delay (fill both). Their 1.9 s delay is the fail-safe, so the hero shows by itself if
+     scripts never arrive; it lines up with the preloader's own fail-safe lift (1.6 s).
+   - Preloader.tsx sets html[data-intro] when it lifts the curtain. That switches to the *-play
+     animations (new names, so they start from zero) with no extra delay.
+   Reduced motion gets none of this: the hero is simply there. */
+@property --k {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hero-name [data-inner] {
+    animation: hero-rise-fs 1s cubic-bezier(0.22, 1, 0.36, 1) calc(1.9s + var(--i, 0) * 35ms) both;
+  }
+  .hero-role [data-inner] {
+    animation: hero-rise-fs 0.8s cubic-bezier(0.22, 1, 0.36, 1) calc(2.35s + var(--i, 0) * 40ms) both;
+  }
+  .hero-fade {
+    animation: hero-fade-fs 0.8s cubic-bezier(0.22, 1, 0.36, 1) 2.2s both;
+  }
+  .hero-line {
+    animation: hero-line-fs 1s cubic-bezier(0.87, 0, 0.13, 1) 2.2s both;
+  }
+  .hero-p .sweep {
+    animation: hero-sweep-fs 0.7s cubic-bezier(0.65, 0, 0.35, 1) 2.8s both;
+  }
+
+  html[data-intro] .hero-name [data-inner] {
+    animation-name: hero-rise-play;
+    animation-delay: calc(var(--i, 0) * 35ms);
+  }
+  html[data-intro] .hero-role [data-inner] {
+    animation-name: hero-rise-play;
+    animation-delay: calc(0.45s + var(--i, 0) * 40ms);
+  }
+  html[data-intro] .hero-fade {
+    animation-name: hero-fade-play;
+    animation-delay: 0.3s;
+  }
+  html[data-intro] .hero-line {
+    animation-name: hero-line-play;
+    animation-delay: 0.3s;
+  }
+  html[data-intro] .hero-p .sweep {
+    animation-name: hero-sweep-play;
+    animation-delay: 0.9s;
+  }
+}
+@keyframes hero-rise-fs {
+  from { translate: 0 115%; }
+  to { translate: 0 0; }
+}
+@keyframes hero-rise-play {
+  from { translate: 0 115%; }
+  to { translate: 0 0; }
+}
+@keyframes hero-fade-fs {
+  from { translate: 0 24px; }
+  to { translate: 0 0; }
+}
+@keyframes hero-fade-play {
+  from { translate: 0 24px; }
+  to { translate: 0 0; }
+}
+@keyframes hero-line-fs {
+  from { scale: 0 1; }
+  to { scale: 1 1; }
+}
+@keyframes hero-line-play {
+  from { scale: 0 1; }
+  to { scale: 1 1; }
+}
+@keyframes hero-sweep-fs {
+  from { --k: 0; }
+  to { --k: 1; }
+}
+@keyframes hero-sweep-play {
+  from { --k: 0; }
+  to { --k: 1; }
+}
+
 @keyframes fadein {
   from {
     opacity: 0;

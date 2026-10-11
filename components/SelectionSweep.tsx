@@ -18,8 +18,9 @@ export function SelectionSweep({ children, trigger = "scroll", delay = 0.2 }: Pr
     () => {
       const mm = gsap.matchMedia();
       mm.add(MOTION_OK, () => {
-        gsap.set(ref.current, { "--k": 0 });
+        // "manual" belongs to the hero, whose entrance (including this sweep) is CSS-driven
         if (trigger === "manual") return;
+        gsap.set(ref.current, { "--k": 0 });
         gsap.to(ref.current, {
           "--k": 1,
           duration: 0.9,
