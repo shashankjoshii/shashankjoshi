@@ -8,9 +8,12 @@
   --line: #e6e6e6;
   --surface: #f4f4f5;
   --accent: #0038ff; /* 6.98:1 on white; white on accent is the same. Never black on accent (2.84:1). */
-  /* both roles use Roboto Flex; the names are kept so every component keeps working */
-  --font-bricolage: var(--font-flex);
-  --font-sans: var(--font-flex);
+  /* both roles use Roboto Flex; the names are kept so every component keeps working.
+     Deliberately NOT var(--font-flex): that stack ends in next/font's generated "Roboto Flex Fallback"
+     face (src: local(Arial)), and resolving that system font cost ~130 ms of the ~290 ms first layout,
+     the page's longest task. The face name below is the real font's; system-ui is the fallback. */
+  --font-bricolage: "Roboto Flex", system-ui, sans-serif;
+  --font-sans: "Roboto Flex", system-ui, sans-serif;
 }
 
 @theme inline {

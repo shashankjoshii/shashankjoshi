@@ -448,7 +448,7 @@ function InvoiceStack({
             return (
               <li key={line} className="flex items-baseline justify-between gap-3">
                 <span>
-                  <span className="text-muted">{k}</span>&ensp;{v.join(" ")}
+                  <span className="text-muted">{k}</span>&ensp;{withRupee(v.join(" "))}
                 </span>
                 <span aria-hidden className="text-accent">
                   &#10003;
@@ -602,6 +602,29 @@ const SAMPLE_LINES = [
   "Total  ₹4,250.00",
 ];
 
+/** The rupee sign sits in Roboto Flex's latin-ext slice. Setting it in the display font made the
+ *  browser fetch a second 145 KB font file and re-lay-out the whole page when it arrived, so just
+ *  the glyph is set in the system font and that slice is never requested. */
+const SYSTEM_FONT = "system-ui, sans-serif";
+function withRupee(text: string, svg = false) {
+  return text.split("₹").flatMap((part, i) =>
+    i === 0
+      ? [part]
+      : [
+          svg ? (
+            <tspan key={i} fontFamily={SYSTEM_FONT}>
+              ₹
+            </tspan>
+          ) : (
+            <span key={i} style={{ fontFamily: SYSTEM_FONT }}>
+              ₹
+            </span>
+          ),
+          part,
+        ],
+  );
+}
+
 const STAGE_X = [95, 335, 575, 810]; // node centres, for the phase labels
 
 export function InvoiceDiagram({ stage }: { stage: number }) {
@@ -679,7 +702,7 @@ export function InvoiceDiagram({ stage }: { stage: number }) {
                   fontSize={16}
                   fontFamily="var(--font-sans), sans-serif"
                 >
-                  {line}
+                  {withRupee(line, true)}
                 </text>
                 <path
                   data-check
