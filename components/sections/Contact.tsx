@@ -156,11 +156,14 @@ export function Contact() {
     >
       {/* a slow glass knot turning behind the headline: the page ends on depth, not a flat colour */}
       {/* phones and tablets: the knot sits behind the type, so it stays small and dimmed to keep
-          the white text (and the Hire me CTA, which the full-size knot reaches at md) readable */}
+          the white text (and the Hire me CTA, which the full-size knot reaches at md) readable.
+          Reduced motion at lg+: the still pose is pale and sits at full size (no scroll scale/drift
+          to carry it off the headline), so it is sized to the live knot's on-screen size and dimmed.
+          Sized with h/w, not scale: the canvas measures its box, so a transform would apply twice. */}
       <div aria-hidden className="absolute inset-0 -z-10 opacity-40 lg:opacity-100">
         <Scene3D
           kind="knot"
-          className="contact-knot absolute right-[-30%] top-[6%] h-[44svh] w-[90vw] lg:right-[-8%] lg:top-[6%] lg:h-[78svh] lg:w-[50vw]"
+          className="contact-knot absolute right-[-30%] top-[6%] h-[44svh] w-[90vw] lg:right-[-8%] lg:top-[6%] lg:h-[78svh] lg:w-[50vw] lg:motion-reduce:h-[62svh] lg:motion-reduce:w-[40vw] lg:motion-reduce:opacity-70"
         />
       </div>
       <div>
