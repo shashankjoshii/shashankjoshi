@@ -18,12 +18,15 @@ const REST = { w: 700, d: 96 };
 const PEAK = { w: 800, d: 100 };
 const START = { w: 200, d: 75 };
 
-// The "o" counter is a tall narrow ellipse. Where its centre sits inside the o's box (fraction of
-// the height) and its half-width / half-height as a fraction of the font size, measured from the
-// rendered glyph. Only the zoom-through depends on them.
+// The "o" counter is a tall, very narrow slot. Where its centre sits inside the o's box (fraction
+// of the height) and its half-width / half-height as a fraction of the font size, measured from the
+// rendered Roboto Flex glyph (counter 26x97px at fs 342: half-width 0.038 at REST, 0.034 at PEAK,
+// where the pointer field can leave it; it also sits ~2px off the box centre, so the reach on its
+// tight side is ~0.027 at PEAK). Using that narrowest reach means the dive is pure white at the end
+// of the pin whatever weight the o was left at. Only the zoom-through depends on them.
 const COUNTER_Y = 0.5;
-const COUNTER_RX = 0.1;
-const COUNTER_RY = 0.26;
+const COUNTER_RX = 0.027;
+const COUNTER_RY = 0.118;
 
 const SWEPT_PHRASE = "automations that run";
 
@@ -209,9 +212,12 @@ export function Hero() {
               invalidateOnRefresh: true,
               onRefresh: setOrigin,
               onUpdate: (self) => {
+                const wasAtRest = atRest();
                 progress = self.progress;
-                // glyph widths (and so the o's centre) can still be settling from the pointer field
-                if (progress < 0.03) setOrigin();
+                // glyph widths (and so the o's centre) can still be settling from the pointer field.
+                // The first frame off rest counts too: a jump (key, scrollbar, fast flick) can clear
+                // the first 3% in one step, and a stale origin is magnified ~90x by the dive.
+                if (progress < 0.03 || (wasAtRest && !atRest())) setOrigin();
               },
             },
             defaults: { ease: "none" },
