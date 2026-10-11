@@ -40,7 +40,8 @@ function Node({
     ? {
         role: "button" as const,
         tabIndex: 0,
-        "aria-label": `${inspect.label}. ${sub}`,
+        // starts with the visible text ("Drive invoice in"), then says which stage it is
+        "aria-label": `${title} ${sub}. ${inspect.label}`,
         "aria-pressed": inspect.pressed,
         style: { cursor: "pointer" },
         onPointerEnter: (e: React.PointerEvent) => e.pointerType === "mouse" && inspect.onOn(),
@@ -80,6 +81,9 @@ function Node({
       >
         {title}
       </text>
+      {/* a plain space between the two labels, so the visible text reads "Drive invoice in" (not
+          "Driveinvoice in") to anything comparing it with the accessible name; SVG draws nothing for it */}
+      {" "}
       <text
         x={x + w / 2}
         y={low ? y + h - 16 : y + h / 2 + 20}
@@ -599,7 +603,7 @@ export function InvoiceDiagram({ stage }: { stage: number }) {
   const shown = picked ?? stage;
   const info = invoiceStages[shown];
   const inspect = (i: number) => ({
-    label: `${invoiceStages[i].phase}: ${invoiceStages[i].title}`,
+    label: `${invoiceStages[i].phase} stage`,
     pressed: i === shown,
     onOn: () => setPicked(i),
     onOff: () => setPicked((p) => (p === i ? null : p)),
