@@ -59,7 +59,10 @@ export function About() {
             scrub: true,
           },
         });
-        tl.fromTo(words, { opacity: 0.12 }, { opacity: 1, ease: "none", duration: 0.5, stagger: 0.1 }, 0);
+        // Colour, not opacity: unlit words stay at 4.5:1 (#767676 on white), so the statement is readable
+        // before it is scrolled to, and the reveal is still a clear step from grey to ink.
+        const ink = getComputedStyle(words[0]).color;
+        tl.fromTo(words, { color: "#767676" }, { color: ink, ease: "none", duration: 0.5, stagger: 0.1 }, 0);
         words.forEach((w, i) => {
           const cap = w.querySelector(".capsule");
           if (!cap) return;

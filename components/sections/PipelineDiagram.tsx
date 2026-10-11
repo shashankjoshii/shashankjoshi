@@ -345,19 +345,26 @@ export function buildResearchMobile(root: HTMLElement, scrollTrigger: ScrollTrig
   const summary = q<HTMLElement>("[data-m-summary]");
   const [question] = at("[data-m-node]", 0);
 
+  // "Not reached" is a faint border and grey text, not a faded card: opacity would drop the text
+  // below 4.5:1 contrast. #6B6B6B is 4.85:1 on the card surface, #404040 (muted) is already above it.
+  const titles = (n: HTMLElement[]) => n.flatMap((x) => [...x.querySelectorAll<HTMLElement>(".display")]);
+  const subs = (n: HTMLElement[]) => n.flatMap((x) => [...x.querySelectorAll<HTMLElement>("p:not(.display)")]);
+  const ghosts = q<HTMLElement>("[data-m-node]").filter((n) => n.dataset.mStep !== "0");
+
   gsap.set(q("[data-m-track]"), { opacity: 1 });
-  gsap.set(
-    q<HTMLElement>("[data-m-node]").filter((n) => n.dataset.mStep !== "0"),
-    { opacity: GHOST },
-  );
+  gsap.set(ghosts, { borderColor: "rgba(10,10,10,0.14)" });
+  gsap.set([...titles(ghosts), ...subs(ghosts)], { color: "#6B6B6B" });
   gsap.set(question, { borderColor: ACCENT, backgroundColor: WHITE });
   gsap.set(q("[data-m-link]"), { scaleY: 0 });
   gsap.set(bars, { scaleX: 0 });
   gsap.set(summary, { opacity: 0, y: 6 });
 
   const tl = gsap.timeline({ defaults: { ease: "none" }, scrollTrigger });
-  const arrive = (n: HTMLElement[], t: number) =>
-    tl.to(n, { opacity: 1, borderColor: ACCENT, backgroundColor: WHITE, duration: 0.25, stagger: 0.06 }, t);
+  const arrive = (n: HTMLElement[], t: number) => {
+    tl.to(n, { borderColor: ACCENT, backgroundColor: WHITE, duration: 0.25, stagger: 0.06 }, t);
+    tl.to(titles(n), { color: INK, duration: 0.25, stagger: 0.06 }, t);
+    tl.to(subs(n), { color: "#404040", duration: 0.25, stagger: 0.06 }, t);
+  };
   const done = (n: HTMLElement[], t: number) =>
     tl.to(n, { borderColor: REST_BORDER, backgroundColor: SURFACE, duration: 0.25 }, t);
   const flow = (step: number, t: number) =>
