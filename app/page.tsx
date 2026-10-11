@@ -23,7 +23,8 @@ export default function Home() {
       <Nav />
       <main id="main">
         <Hero />
-        <div id="work">
+        {/* tabIndex -1 so the skip link actually moves focus here (the target has no ring of its own) */}
+        <div id="work" tabIndex={-1} style={{ outline: "none" }}>
           {projects.map((p, i) => (
             <ProjectSection key={p.id} project={p} index={i} total={projects.length} prevId={projects[i - 1]?.id} />
           ))}
