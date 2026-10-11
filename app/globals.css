@@ -131,6 +131,29 @@ html.lenis body {
   }
 }
 
+/* Font gate (script in layout.tsx): content is not painted until the display font is ready, so the
+   fallback-to-real swap can't shift the hero or nav. The curtain is outside both, so it still shows. */
+html.fonts-pending main,
+html.fonts-pending header {
+  visibility: hidden;
+}
+
+/* Hero name fit, in CSS so it is right on the first layout (JS used to resize it after hydration,
+   which shifted the whole hero). "Shashank" at its widest weight (wght 800 / wdth 100) is 3.5548em
+   wide in Roboto Flex, so font-size = container width / 3.5548, a hair under so it never touches the
+   gutter, capped by viewport height. The wrapper is the container the cqw unit measures. */
+.hero-name-box {
+  container-type: inline-size;
+}
+.hero-name {
+  font-size: min(calc(100cqw * 0.995 / 3.5548), 38svh);
+}
+@media (max-height: 500px) {
+  .hero-name {
+    font-size: min(calc(100cqw * 0.995 / 3.5548), 25svh);
+  }
+}
+
 /* Hero-only graph paper. Texture, not a focal element: 1px lines at ~7% ink, masked so it fades
    toward the edges and never reaches the section boundaries. */
 .hero-grid {

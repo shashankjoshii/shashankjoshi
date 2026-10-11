@@ -16,6 +16,10 @@ const flex = Roboto_Flex({
   subsets: ["latin"],
   axes: ["opsz", "wdth", "YTLC"],
   display: "swap",
+  // No <link rel="preload">: Chrome holds text paint until a preloaded font arrives, which pushed first
+  // paint (and so FCP/LCP) out by ~1s on a slow connection. The font is still fetched the moment the
+  // inlined CSS needs it, and FONT_GATE below hides the page, not the intro curtain, until it lands.
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -52,9 +56,21 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+// The display face is a 197 KB variable font that usually lands just after first paint. Painting the
+// fallback first and swapping re-sets every glyph, so the hero name and nav jump (CLS 0.15 on desktop).
+// Instead the page content stays invisible (the intro curtain does not: it is outside main/header)
+// until the font is ready. Layout still happens, it just isn't painted, so nothing visible moves.
+// The 1.5 s timer means a slow or failed font can never hold the page back; without JS the class is
+// never added, so content shows normally.
+const FONT_GATE = `(function(){var d=document.documentElement,f=document.fonts;if(!f)return;d.classList.add("fonts-pending");var done=function(){d.classList.remove("fonts-pending")};setTimeout(done,1500);document.addEventListener("DOMContentLoaded",function(){void document.body.offsetHeight;f.ready.then(done)})})();`;
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={flex.variable}>
+    // suppressHydrationWarning: FONT_GATE adds a class to <html> before React hydrates
+    <html lang="en" className={flex.variable} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: FONT_GATE }} />
+      </head>
       <body>
         <JsonLd />
         <LightField />

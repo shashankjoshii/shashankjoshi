@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { gsap, ScrollTrigger, useGSAP, MOTION_OK } from "@/lib/gsap";
+import { useRef } from "react";
+import { gsap, useGSAP, MOTION_OK } from "@/lib/gsap";
 import { curtainGone, onReady } from "@/lib/ready";
 import { attachWeightField } from "@/lib/weightField";
 import { site } from "@/lib/content";
@@ -29,53 +29,8 @@ const COUNTER_RY = 0.118;
 
 const SWEPT_PHRASE = "automations that run";
 
-/** Sets --name-size so "Shashank" at max weight spans the container, capped by viewport height. */
-function useFitName(root: React.RefObject<HTMLElement | null>) {
-  useEffect(() => {
-    const section = root.current;
-    const box = section?.querySelector<HTMLElement>(".hero-name")?.parentElement;
-    if (!section || !box) return;
-
-    const ghost = document.createElement("span");
-    ghost.className = "display";
-    ghost.setAttribute("aria-hidden", "true");
-    ghost.textContent = "Shashank";
-    Object.assign(ghost.style, {
-      position: "absolute",
-      visibility: "hidden",
-      whiteSpace: "nowrap",
-      pointerEvents: "none",
-      fontSize: "100px",
-    });
-    ghost.style.setProperty("--wght", String(PEAK.w));
-    ghost.style.setProperty("--wdth", String(PEAK.d));
-    section.appendChild(ghost);
-
-    let last = 0;
-    const fit = () => {
-      const ratio = ghost.getBoundingClientRect().width / 100;
-      if (!ratio || !box.clientWidth) return;
-      const size = Math.min((box.clientWidth / ratio) * 0.995, window.innerHeight * (window.innerHeight < 500 ? 0.25 : 0.38));
-      if (Math.abs(size - last) < 0.5) return;
-      last = size;
-      section.style.setProperty("--name-size", `${size.toFixed(1)}px`);
-      ScrollTrigger.refresh();
-    };
-
-    fit();
-    void document.fonts?.ready.then(fit);
-    const ro = new ResizeObserver(fit);
-    ro.observe(box);
-    return () => {
-      ro.disconnect();
-      ghost.remove();
-    };
-  }, [root]);
-}
-
 export function Hero() {
   const root = useRef<HTMLElement>(null);
-  useFitName(root);
 
   useGSAP(
     () => {
@@ -311,10 +266,10 @@ export function Hero() {
         className="hero-orb absolute -z-[5] left-1/2 top-[9%] h-[36svh] w-[78vw] -translate-x-1/2 md:left-auto md:right-[-3%] md:top-[5%] md:h-[min(74svh,56.8vw)] md:w-[54vw] md:translate-x-0 [@media(max-height:500px)]:hidden"
       />
 
-      <div className="relative">
+      <div className="hero-name-box relative">
         <div
           data-name
-          className="hero-name display text-[length:var(--name-size,19vw)] [--wdth:96] [--wght:700]"
+          className="hero-name display [--wdth:96] [--wght:700]"
         >
           <h1 aria-label={site.name}>
             <span className="hero-l1 block">
