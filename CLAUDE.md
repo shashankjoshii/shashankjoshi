@@ -17,7 +17,9 @@ uncluttered. Reference repos for technique (not to copy 1:1, study the approach)
 - Tailwind CSS
 - GSAP + ScrollTrigger — scroll-linked timelines, pinned sections, entrance choreography
 - Lenis — smooth scroll, synced with GSAP/ScrollTrigger
-- Framer Motion — micro-interactions, hover states, page/route transitions
+- ~~Framer Motion~~ — dropped (2026-10-11): it was used for one magnetic hover and cost ~100 KB of
+  first-load JS. Micro-interactions (e.g. `components/Magnetic.tsx`) use GSAP `quickTo`. Re-add only
+  if route transitions need it.
 - Deploy target: **Vercel**
 
 ## Recommended Skill

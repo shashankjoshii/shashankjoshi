@@ -21,6 +21,9 @@ const csp = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  // ~45 KB of CSS inlined into the HTML: no render-blocking stylesheet request before first paint.
+  // (style-src 'unsafe-inline' is already allowed by the CSP above.)
+  experimental: { inlineCss: true },
   async headers() {
     return [
       {
