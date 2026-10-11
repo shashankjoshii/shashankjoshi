@@ -14,12 +14,20 @@ function hasFastWebGL() {
   try {
     const c = document.createElement("canvas");
     const gl = c.getContext("webgl", { failIfMajorPerformanceCaveat: true });
-    webglOk = !!gl;
+    webglOk = !!gl && !isSoftwareRenderer(gl);
     gl?.getExtension("WEBGL_lose_context")?.loseContext();
   } catch {
     webglOk = false;
   }
   return webglOk;
+}
+
+/** True when the GL context is backed by a CPU rasteriser (SwiftShader, llvmpipe, WARP). */
+function isSoftwareRenderer(gl: WebGLRenderingContext | WebGL2RenderingContext) {
+  const info = gl.getExtension("WEBGL_debug_renderer_info");
+  if (!info) return false;
+  const name = String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL));
+  return /swiftshader|llvmpipe|softpipe|software|basic render/i.test(name);
 }
 
 /** Whether the page-wide shader may run at all. */
@@ -52,9 +60,16 @@ export function canRun3D() {
     if (nav.hardwareConcurrency !== undefined && nav.hardwareConcurrency <= 4) return false;
   }
   try {
-    const gl = document.createElement("canvas").getContext("webgl2");
-    gl?.getExtension("WEBGL_lose_context")?.loseContext();
-    return !!gl;
+    // failIfMajorPerformanceCaveat refuses a software rasteriser outright; the renderer-string check
+    // below catches the ones that slip through. Either way the CSS orb is shown instead of a
+    // CPU-rendered 138k-vertex shader that would hold the main thread for seconds.
+    const gl = document
+      .createElement("canvas")
+      .getContext("webgl2", { failIfMajorPerformanceCaveat: true }) as WebGL2RenderingContext | null;
+    if (!gl) return false;
+    const ok = !isSoftwareRenderer(gl);
+    gl.getExtension("WEBGL_lose_context")?.loseContext();
+    return ok;
   } catch {
     return false;
   }

@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { onReady } from "@/lib/ready";
 import { canRun3D } from "@/lib/capability";
 import type { StageKind } from "./Stage";
@@ -35,19 +35,40 @@ if (typeof window !== "undefined") {
  */
 export function Scene3D({ kind, className = "" }: { kind: StageKind; className?: string }) {
   const [mode, setMode] = useState<"wait" | "live" | "still" | "css">("wait");
+  const host = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const ok = canRun3D();
-    return onReady(() => {
-      const go = () => setMode(!ok ? "css" : reduced ? "still" : "live");
+    let io: IntersectionObserver | undefined;
+    const go = () => setMode(!ok ? "css" : reduced ? "still" : "live");
+    const idle = () => {
       if ("requestIdleCallback" in window) window.requestIdleCallback(go, { timeout: 1200 });
       else setTimeout(go, 150);
+    };
+    const off = onReady(() => {
+      // The knot lives at the bottom of the page: building its geometry and compiling its shader
+      // on load only competes with the hero. Wait until it is about a screen away.
+      if (kind === "knot" && ok && "IntersectionObserver" in window && host.current) {
+        io = new IntersectionObserver(
+          ([e]) => {
+            if (!e.isIntersecting) return;
+            io?.disconnect();
+            idle();
+          },
+          { rootMargin: "100% 0px" },
+        );
+        io.observe(host.current);
+      } else idle();
     });
-  }, []);
+    return () => {
+      off();
+      io?.disconnect();
+    };
+  }, [kind]);
 
   return (
-    <div aria-hidden className={`pointer-events-none ${className}`}>
+    <div ref={host} aria-hidden className={`pointer-events-none ${className}`}>
       {(mode === "live" || mode === "still") && (
         <div className="h-full w-full animate-[fadein_1.4s_ease_both]">
           <Stage kind={kind} still={mode === "still"} />
