@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { gsap, useGSAP, MOTION_OK } from "@/lib/gsap";
+import { curtainGone } from "@/lib/ready";
 
 type Props = {
   text: string;
@@ -33,6 +34,9 @@ export function SplitReveal({
     () => {
       const mm = gsap.matchMedia();
       mm.add(MOTION_OK, () => {
+        // manual reveals belong to the hero: if the intro curtain already lifted before hydration
+        // (slow device), the parent skips its entrance, so the server-painted text must stay put
+        if (trigger === "manual" && curtainGone()) return;
         const inner = gsap.utils.toArray<HTMLElement>("[data-inner]", root.current);
         // y: 0 too, so a stale px offset parsed from an earlier inline transform (strict-mode re-run)
         // can never add to the percentage
