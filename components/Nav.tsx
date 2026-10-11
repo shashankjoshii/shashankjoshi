@@ -105,6 +105,8 @@ export function Nav() {
     <header
       ref={root}
       data-mode={mode}
+      // faded out during the dive: take the links out of the tab order and hit-testing too
+      inert={mode === "away"}
       className={`nav-safe pointer-events-none fixed inset-x-0 top-0 z-50 flex items-center justify-between transition-[background-color,border-color,opacity,transform] duration-300 ${
         mode === "solid" ? "border-b border-line bg-bg/95 backdrop-blur" : "border-b border-transparent"
       } ${mode === "away" ? "!opacity-0" : ""}`}
