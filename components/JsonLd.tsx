@@ -55,6 +55,7 @@ const graph = [
   ...projects.map((p) => ({
     "@type": productIds.has(p.id) ? "SoftwareApplication" : "CreativeWork",
     "@id": `${seo.url}/#${p.id}`,
+    url: `${seo.url}/work/${p.id}`,
     name: p.name,
     ...(p.alias ? { alternateName: p.alias.replace(/^formerly\s+/i, "") } : {}),
     description: `${p.build} ${p.result}`,

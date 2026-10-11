@@ -116,6 +116,90 @@ export const projects: Project[] = [
   },
 ];
 
+/**
+ * Case-study pages (/work/[slug]). Every sentence is a rewording of facts already in `projects`
+ * and `invoiceStages` above: no invented metrics, users or revenue. Each answer is 30-75 words so
+ * it can stand alone as a search snippet or an AI-assistant quote.
+ */
+export type CaseStudy = {
+  /** <title>, kept under ~60 characters */
+  title: string;
+  /** meta description, under 160 characters */
+  description: string;
+  what: string;
+  problem: string;
+  howIntro: string;
+  /** Optional numbered stages shown under "How does it work?" */
+  steps?: { title: string; detail: string }[];
+  stack: string;
+  proves: string;
+};
+
+export const caseStudies: Record<string, CaseStudy> = {
+  "research-agent": {
+    title: "AI Research Agent: n8n and Ollama workflow | Shashank Joshi",
+    description:
+      "Agentic research workflow built with n8n and Ollama: a planner splits a question into angles, researchers work in parallel, and synthesis writes the report.",
+    what: "The AI Research Agent is an agentic workflow built with n8n and Ollama that runs fully locally. A planner breaks a research question into angles, parallel researchers investigate each angle, and a synthesis step merges what they found into one written report. It was designed and built by Shashank Joshi.",
+    problem:
+      "Research questions have to be broken down, chased and written up by hand, every time. That repeated, multi-step work is what an agentic workflow can take over. The agent runs the whole loop, from the first question to the finished write-up, without anyone steering each step.",
+    howIntro:
+      "A question enters the workflow as a trigger. A planner decides which angles to investigate, three researchers work on those angles in parallel, and a synthesis step merges their results into the final report. Every step runs on local Ollama models, orchestrated by n8n.",
+    steps: [
+      { title: "Question", detail: "A question starts the workflow as a trigger." },
+      { title: "Planner", detail: "Plans the angles worth investigating." },
+      { title: "Researchers", detail: "Three researchers work the angles in parallel." },
+      { title: "Synthesis", detail: "Merges the findings and writes the report." },
+    ],
+    stack:
+      "It is built with n8n for orchestration and Ollama for local models, using agentic workflow design and prompt engineering to coordinate the planner, the researchers and the synthesis step.",
+    proves:
+      "Agentic AI and automation skill: multi-step orchestration across several cooperating model calls that runs without hand-holding, built from open tooling and running fully locally.",
+  },
+  "invoice-pipeline": {
+    title: "Invoice Extraction Pipeline: n8n and Groq | Shashank Joshi",
+    description:
+      "An n8n and Groq workflow that reads invoices dropped into Google Drive, extracts the fields with OCR and an LLM, and writes structured data back.",
+    what: "The Invoice Extraction Pipeline is an n8n workflow that turns invoices into structured data. An invoice dropped into a Google Drive folder is read with OCR, extracted by an LLM on the Groq API, validated, and written back to Drive as structured data. There is no database in the loop.",
+    problem:
+      "Invoices arrive as documents, and the data inside gets re-typed by hand. The pipeline removes that step: the document goes in, and the invoice number, vendor, line items, tax and total come out as consistent, structured fields.",
+    howIntro:
+      "Four stages run in order. Drive picks up the invoice, Groq reads and extracts it, a validation step checks and shapes the fields, and the result is written back to Drive. n8n orchestrates every hand-off, so the whole flow needs no database.",
+    // steps are built from `invoiceStages` on the page, so the wording can't drift from the diagram
+    stack:
+      "It is built with n8n for orchestration, the Groq API for OCR and LLM extraction, and Google Drive for both input and output.",
+    proves:
+      "Automation depth: a production-shaped document pipeline built from n8n and an LLM API, running without a database.",
+  },
+  billzy: {
+    title: "Billzy: GST invoicing app for retail shops | Shashank Joshi",
+    description:
+      "Billzy (formerly BizBook) is a deployed GST invoicing and inventory ERP for kirana and retail shops, built with Next.js, Supabase and Prisma.",
+    what: "Billzy (formerly BizBook) is a GST invoicing and inventory ERP for kirana and retail shops. It covers billing, stock and GST workflows in one place and is built to stay simple for small shopkeepers. It is deployed and in real use by small businesses, and was designed and built end to end by Shashank Joshi.",
+    problem:
+      "Kirana and retail shops need billing, stock tracking and GST workflows without unnecessary complexity. Billzy brings those jobs together in one simple tool, so a small shop can keep its invoices and its inventory in the same place.",
+    howIntro:
+      "Billzy is a web application for GST invoicing and inventory. Shashank handled the product thinking and UX as well as the full-stack build, working across the interface, the backend and the data layer, and it is now deployed and in use.",
+    stack:
+      "Billzy is built with Next.js and TypeScript on the front end, with Supabase and Prisma behind it.",
+    proves:
+      "That Shashank ships real, revenue-relevant products for small businesses: a deployed application in real use, not a demo.",
+  },
+  kiro: {
+    title: "KIRO: a directory of 500+ AI tools | Shashank Joshi",
+    description:
+      "KIRO is a directory of 500+ AI tools, designed, built and curated solo by Shashank Joshi with Next.js, Supabase and Tailwind CSS.",
+    what: "KIRO is a directory of 500+ AI tools, designed, built, curated and run solo by Shashank Joshi. It covers the whole life of the product, from the data model and the interface to the daily upkeep of the catalogue, with one person responsible for all of it.",
+    problem:
+      "AI tools multiply faster than anyone can keep track of them. KIRO collects more than 500 of them in a single directory, curated and maintained by one person, so there is one place to look instead of many.",
+    howIntro:
+      "KIRO is a Next.js web application backed by Supabase. Shashank designed the interface, modelled the data, built the application and keeps the catalogue up to date himself, which is why the project spans everything from the data model to daily upkeep.",
+    stack: "KIRO is built with Next.js, Supabase and Tailwind CSS.",
+    proves:
+      "Scale and independent execution: a 500+ tool catalogue built, curated and kept current by one person.",
+  },
+};
+
 /** The four stages of the invoice pipeline, in the order a document travels. */
 export const invoiceStages = [
   {

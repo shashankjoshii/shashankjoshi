@@ -131,10 +131,11 @@ html.lenis body {
   }
 }
 
-/* Font gate (script in layout.tsx): the hero name and nav are not painted until the display font is
-   ready, so the fallback-to-real swap can't shift them (they are set huge, so a swap moved them most).
-   Body copy is left alone so the page's largest text can paint at once. The curtain is outside both. */
-html.fonts-pending .hero-name,
+/* Font gate (script in layout.tsx): the page heading (the hero name on the home page) and the nav are
+   not painted until the display font is ready, so the fallback-to-real swap can't shift them (they are
+   set huge, so a swap moved them most). Body copy is left alone so the page's largest text can paint
+   at once. The intro curtain is outside both. */
+html.fonts-pending h1,
 html.fonts-pending header {
   visibility: hidden;
 }

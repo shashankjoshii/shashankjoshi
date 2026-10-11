@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, useState } from "react";
 import { gsap, ScrollTrigger, useGSAPIdle, MOTION_OK } from "@/lib/gsap";
 import type { Project } from "@/lib/content";
@@ -67,6 +68,20 @@ function Row({
   );
 }
 
+/** Link to the project's own case-study page (/work/[slug]). Not prefetched: four extra requests
+ *  on the home page for a link most visitors won't follow. */
+function CaseLink({ id }: { id: string }) {
+  return (
+    <Link
+      href={`/work/${id}`}
+      prefetch={false}
+      className="inline-flex min-h-11 items-center font-semibold text-fg underline underline-offset-8 transition-colors hover:text-accent"
+    >
+      Read the case study<span aria-hidden>&nbsp;&rarr;</span>
+    </Link>
+  );
+}
+
 /** The table compressed to one line: role · stack, then problem → result. */
 function Facts({ project }: { project: Project }) {
   const [problem, result] = project.brief ?? [project.problem, project.result];
@@ -82,16 +97,19 @@ function Facts({ project }: { project: Project }) {
         <span className="text-accent"> &rarr; </span>
         <span className="text-fg">{result}</span>
       </p>
-      {project.href && (
-        <a
-          href={project.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="p-row mt-4 inline-flex min-h-11 items-center font-semibold text-accent underline underline-offset-8"
-        >
-          {project.hrefLabel ?? "View live"}
-        </a>
-      )}
+      <div className="p-row mt-4 flex flex-wrap items-center gap-x-8">
+        {project.href && (
+          <a
+            href={project.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-11 items-center font-semibold text-accent underline underline-offset-8"
+          >
+            {project.hrefLabel ?? "View live"}
+          </a>
+        )}
+        <CaseLink id={project.id} />
+      </div>
     </div>
   );
 }
@@ -437,16 +455,19 @@ export function ProjectSection({
                 </Row>
               </dl>
 
-              {project.href && (
-                <a
-                  href={project.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-8 inline-flex min-h-11 items-center font-semibold text-accent underline underline-offset-8"
-                >
-                  {project.hrefLabel ?? "View live"}
-                </a>
-              )}
+              <div className="mt-8 flex flex-wrap items-center gap-x-8">
+                {project.href && (
+                  <a
+                    href={project.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-11 items-center font-semibold text-accent underline underline-offset-8"
+                  >
+                    {project.hrefLabel ?? "View live"}
+                  </a>
+                )}
+                <CaseLink id={project.id} />
+              </div>
             </div>
 
             <div className="relative min-w-0 lg:col-span-8">

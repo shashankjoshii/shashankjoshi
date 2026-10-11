@@ -27,7 +27,7 @@ ${stack}
 ## Projects
 
 ${projects
-  .map((p) => `- [${p.name}](${seo.url}/#${p.id})${p.alias ? ` (${p.alias})` : ""}: ${p.build} Stack: ${p.tech.join(", ")}. ${p.result}`)
+  .map((p) => `- [${p.name}](${seo.url}/work/${p.id})${p.alias ? ` (${p.alias})` : ""}: ${p.build} Stack: ${p.tech.join(", ")}. ${p.result}`)
   .join("\n")}
 `;
 
