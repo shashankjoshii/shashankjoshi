@@ -6,6 +6,7 @@ import { ProjectSection } from "@/components/sections/ProjectSection";
 import { Process } from "@/components/sections/Process";
 import { About } from "@/components/sections/About";
 import { Currently } from "@/components/sections/Currently";
+import { Faq } from "@/components/sections/Faq";
 import { Contact } from "@/components/sections/Contact";
 import { projects } from "@/lib/content";
 
@@ -33,6 +34,7 @@ export default function Home() {
         <Process />
         <About />
         <Currently />
+        <Faq />
         <Contact />
       </main>
     </>

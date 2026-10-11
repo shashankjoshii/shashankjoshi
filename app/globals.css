@@ -24,6 +24,18 @@
   --font-display: var(--font-bricolage);
 }
 
+/* Elevation. Shadows are tinted toward the ink (a cool near-black), never pure black, and stacked:
+   a tight contact shadow plus a wide, faint diffusion. Blue-tinted shadow only under blue things.
+   Raised light surfaces pair a shadow with inset-shadow-highlight (a 1px top edge catching light). */
+@theme {
+  --shadow-hair: 0 0 0 1px rgb(10 12 30 / 0.07), 0 1px 2px rgb(10 12 30 / 0.06);
+  --shadow-soft: 0 1px 2px rgb(10 12 30 / 0.04), 0 10px 24px -14px rgb(10 12 30 / 0.12), 0 36px 72px -36px rgb(10 12 30 / 0.18);
+  --shadow-lift: 0 2px 4px rgb(10 12 30 / 0.05), 0 18px 36px -14px rgb(10 12 30 / 0.16), 0 56px 110px -44px rgb(10 12 30 / 0.26);
+  --shadow-sheet: 0 -28px 50px -30px rgb(10 12 30 / 0.13);
+  --shadow-accent: 0 30px 60px -30px rgb(0 56 255 / 0.55);
+  --inset-shadow-highlight: inset 0 1px 0 rgb(255 255 255 / 0.75);
+}
+
 html {
   background: var(--bg);
 }
@@ -238,5 +250,70 @@ html {
   .nav-safe {
     padding-top: max(0.25rem, env(safe-area-inset-top));
     padding-bottom: 0.25rem;
+  }
+}
+
+/* --- Small-scale life ---------------------------------------------------------------------- */
+/* Diagram frames: a raised grey panel that lifts further while the pointer tilts it. */
+.frame {
+  border-radius: 1rem;
+  box-shadow: var(--inset-shadow-highlight), 0 0 0 1px var(--line), var(--shadow-soft);
+  transition: box-shadow 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-lift] .frame {
+  box-shadow: var(--inset-shadow-highlight), 0 0 0 1px var(--line), var(--shadow-lift);
+}
+
+/* Inline capsules in the About statement: tiny images and glyphs set between words. */
+.capsule {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.8em;
+  height: 0.78em;
+  vertical-align: 0.02em;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: var(--inset-shadow-highlight), 0 0 0 1px var(--line), var(--shadow-soft);
+}
+.capsule[data-glyph] {
+  width: 1.3em;
+}
+.capsule img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.06);
+  transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (hover: hover) and (pointer: fine) {
+  .capsule:hover img {
+    transform: scale(1.18) translateX(-4%);
+  }
+}
+
+/* The local-time colon ticks once a second. Static when motion is reduced. */
+@keyframes blink {
+  50% {
+    opacity: 0.2;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .blink {
+    animation: blink 2s steps(1) infinite;
+  }
+}
+
+/* Availability dot in the nav: a ring that swells and fades, like a slow breath. */
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  60% {
+    transform: scale(2.8);
+    opacity: 0;
   }
 }

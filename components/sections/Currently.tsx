@@ -2,10 +2,20 @@
 
 import { currently, site } from "@/lib/content";
 import { useLocalTime } from "@/lib/useLocalTime";
+import { Glyph } from "../glyphs/Glyph";
 
-/** Small living-status strip. Tertiary in the hierarchy, so it stays quiet and static. */
+/** Hour of day (0-23) in the site's timezone, for the day/night glyph. */
+const localHour = () =>
+  Number(new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone: site.timezone }).format(new Date()));
+
+/**
+ * Small living-status strip. Tertiary in the hierarchy, so its only motion is the clock's colon
+ * ticking; a still sun or moon says whether it is day where I am.
+ */
 export function Currently() {
   const time = useLocalTime();
+  const day = time ? (h => h >= 6 && h < 18)(localHour()) : true;
+  const [hh, rest] = time.toUpperCase().split(":");
 
   const items = [
     { k: "Building", v: currently.building },
@@ -31,8 +41,23 @@ export function Currently() {
         ))}
         <div>
           <dt className="label mb-2 text-muted">Local time</dt>
-          <dd className="text-lg tabular-nums" suppressHydrationWarning>
-            {time ? `${time.toUpperCase()}, ${site.location}` : "\u2014"}
+          <dd className="flex items-center gap-2.5 text-lg tabular-nums" suppressHydrationWarning>
+            {time && rest !== undefined ? (
+              <>
+                <Glyph
+                  name={day ? "sun" : "moon"}
+                  label={day ? "Daytime" : "Night-time"}
+                  className="h-[1.05em] w-[1.05em] shrink-0 text-muted"
+                />
+                <span>
+                  {hh}
+                  <span className="blink">:</span>
+                  {rest}, {site.location}
+                </span>
+              </>
+            ) : (
+              "—"
+            )}
           </dd>
         </div>
       </dl>

@@ -13,6 +13,7 @@ import {
   buildResearchMobile,
   buildInvoiceMobile,
 } from "./PipelineDiagram";
+import { Glyph } from "../glyphs/Glyph";
 import { DashboardZoom, buildDashboardZoom } from "./moments/DashboardZoom";
 import { BrandSpecimen, buildBrandSpecimen } from "./moments/BrandSpecimen";
 
@@ -29,6 +30,26 @@ const PIN_LENGTH: Partial<Record<Project["visual"], number>> = {
 /** The product projects break the shared template: a facts line and a full-width feature. */
 const isFeature = (v: Project["visual"]) =>
   v === "dashboard-zoom" || v === "brand-specimen";
+
+/**
+ * What kind of thing this is, at a glance: "Live" for shipped products (a breathing blue dot),
+ * "Workflow" for the automations (a packet riding between two nodes).
+ */
+function StatusChip({ status }: { status: NonNullable<Project["status"]> }) {
+  return (
+    <span className="ml-2.5 inline-flex h-7 items-center gap-2 rounded-full bg-bg pl-2.5 pr-3 text-[0.8125rem] text-fg shadow-hair inset-shadow-highlight">
+      {status === "live" ? (
+        <span aria-hidden className="relative flex h-1.5 w-1.5">
+          <span className="absolute inset-0 rounded-full bg-accent motion-safe:animate-[breathe_2.4s_ease-in-out_infinite]" />
+          <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+        </span>
+      ) : (
+        <Glyph name="nodes" loop="flow" packet="var(--accent)" className="h-4 w-4 text-fg" />
+      )}
+      {status === "live" ? "Live" : "Workflow"}
+    </span>
+  );
+}
 
 /** One editorial metadata row: label column + value. */
 function Row({
@@ -189,11 +210,14 @@ export function ProjectSection({
             ease: "power3.out",
           });
           const move = (e: PointerEvent) => {
+            // the frame's shadow deepens while it tilts (see .frame in globals.css)
+            card.dataset.lift = "";
             const r = card.getBoundingClientRect();
             ry(((e.clientX - r.left) / r.width - 0.5) * 7);
             rx(-((e.clientY - r.top) / r.height - 0.5) * 5);
           };
           const leave = () => {
+            delete card.dataset.lift;
             rx(0);
             ry(0);
           };
@@ -202,6 +226,7 @@ export function ProjectSection({
           cleanups.push(() => {
             card.removeEventListener("pointermove", move);
             card.removeEventListener("pointerleave", leave);
+            delete card.dataset.lift;
             gsap.set(card, { clearProps: "transform" });
           });
         }
@@ -332,7 +357,7 @@ export function ProjectSection({
       id={project.id}
       ref={root}
       aria-labelledby={`${project.id}-title`}
-      className={`relative bg-bg ${index > 0 ? "shadow-[0_-28px_50px_-30px_rgb(0_0_0/0.12)]" : ""}`}
+      className={`relative bg-bg ${index > 0 ? "shadow-sheet" : ""}`}
       style={{ zIndex: index + 1 }}
     >
       <div className="p-inner relative flex min-h-svh flex-col justify-center overflow-hidden px-4 py-20 [transform-origin:50%_100%] md:px-12 lg:py-10">
@@ -361,6 +386,7 @@ export function ProjectSection({
               </span>
             </span>
             <span aria-hidden>/ {String(total).padStart(2, "0")}</span>
+            {project.status && <StatusChip status={project.status} />}
           </p>
           <h2
             id={`${project.id}-title`}
@@ -426,12 +452,12 @@ export function ProjectSection({
             <div className="relative min-w-0 lg:col-span-8">
               <div ref={visual}>
                 {project.visual === "research-agent" && (
-                  <div className="rounded-[6px] border border-line bg-surface p-4 md:p-6">
+                  <div className="frame bg-surface p-4 md:p-6">
                     <ResearchDiagram />
                   </div>
                 )}
                 {project.visual === "invoice-pipeline" && (
-                  <div className="rounded-[6px] border border-line bg-surface p-4 md:p-6">
+                  <div className="frame bg-surface p-4 md:p-6">
                     <InvoiceDiagram stage={stage} />
                   </div>
                 )}

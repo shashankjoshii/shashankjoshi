@@ -1,4 +1,4 @@
-import { about, projects, site } from "@/lib/content";
+import { about, faq, projects, site } from "@/lib/content";
 import { seo } from "@/lib/seo";
 
 const personId = `${seo.url}/#person`;
@@ -41,6 +41,16 @@ const graph = [
     homeLocation: { "@type": "City", name: seo.city },
     knowsAbout: [...new Set(about.clusters.flatMap((c) => c.lines.flat()))],
     sameAs: [site.links.github, site.links.linkedin],
+  },
+  {
+    "@type": "FAQPage",
+    "@id": `${seo.url}/#faq`,
+    url: seo.url,
+    mainEntity: faq.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: { "@type": "Answer", text: item.a },
+    })),
   },
   ...projects.map((p) => ({
     "@type": productIds.has(p.id) ? "SoftwareApplication" : "CreativeWork",

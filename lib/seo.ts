@@ -10,7 +10,7 @@ export const seo = {
   countryCode: "IN",
   title: "Shashank Joshi | Full-Stack Developer in Ahmedabad, India",
   description:
-    "Shashank Joshi is a full-stack and Next.js developer in Ahmedabad, India. He builds web products and AI automations (n8n, Ollama, Groq) for shops, studios and teams.",
+    "Shashank Joshi is a full-stack developer in Ahmedabad, India. He builds Next.js web products and AI automations (n8n, Ollama, Groq) for shops and teams.",
   keywords: [
     "Shashank Joshi",
     "full-stack developer Ahmedabad",

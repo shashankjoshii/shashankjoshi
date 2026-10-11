@@ -2,18 +2,22 @@
 
 import { useRef } from "react";
 import { gsap, ScrollTrigger, useGSAP, MOTION_OK } from "@/lib/gsap";
+import { Glyph, type GlyphName } from "./glyphs/Glyph";
 
 const WORDS = ["Products that ship", "Automations that run", "Agents that reason", "Interfaces that move"];
+// one separator per phrase, cycling through the glyph set; neighbours turn in opposite directions
+const SEPARATORS: GlyphName[] = ["spark", "asterisk", "spark", "orbit"];
 
 function Row() {
   return (
     <div className="marquee-row flex shrink-0 items-center gap-10 pr-10 md:gap-16 md:pr-16">
-      {WORDS.map((w) => (
+      {WORDS.map((w, i) => (
         <span key={w} className="flex items-center gap-10 md:gap-16">
           <span className="display whitespace-nowrap text-[clamp(2.4rem,7vw,6.5rem)] [--wght:760]">{w}</span>
-          <svg aria-hidden viewBox="0 0 24 24" className="marquee-star h-[0.5em] w-[0.5em] shrink-0 text-[clamp(2.4rem,7vw,6.5rem)]">
-            <path fill="currentColor" d="M12 0c.6 6.4 5.6 11.4 12 12-6.4.6-11.4 5.6-12 12-.6-6.4-5.6-11.4-12-12C6.4 11.4 11.4 6.4 12 0Z" />
-          </svg>
+          <Glyph
+            name={SEPARATORS[i]}
+            className={`marquee-star ${i % 2 ? "marquee-ccw" : "marquee-cw"} h-[0.5em] w-[0.5em] shrink-0 text-[clamp(2.4rem,7vw,6.5rem)]`}
+          />
         </span>
       ))}
     </div>
@@ -35,7 +39,10 @@ export function Marquee() {
         const track = root.current!.querySelector<HTMLElement>(".marquee-track")!;
         const loop = gsap.to(track, { xPercent: -50, ease: "none", duration: 28, repeat: -1 });
         const lean = gsap.quickTo(track, "skewX", { duration: 0.5, ease: "power3.out" });
-        const stars = gsap.to(".marquee-star", { rotation: 360, ease: "none", duration: 8, repeat: -1 });
+        const stars = gsap
+          .timeline({ repeat: -1, defaults: { ease: "none", duration: 8 } })
+          .to(".marquee-cw", { rotation: 360 }, 0)
+          .to(".marquee-ccw", { rotation: -360 }, 0);
 
         let dir = 1;
         const st = ScrollTrigger.create({
@@ -83,7 +90,7 @@ export function Marquee() {
 
   return (
     <div className="relative z-[6] overflow-x-clip py-10 md:py-16">
-      <div ref={root} aria-hidden className="on-blue -mx-[4vw] bg-accent py-5 text-white shadow-[0_30px_60px_-30px_rgb(0_56_255/0.6)] md:py-7">
+      <div ref={root} aria-hidden className="on-blue -mx-[4vw] bg-accent py-5 text-white shadow-accent md:py-7">
         <div className="marquee-track flex w-max will-change-transform">
           <Row />
           <Row />

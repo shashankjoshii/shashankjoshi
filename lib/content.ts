@@ -45,6 +45,8 @@ export type Project = {
   hrefLabel?: string;
   visual: ProjectVisual;
   image?: string;
+  /** Small chip beside the kicker: a shipped product, or an automation. */
+  status?: "live" | "workflow";
 };
 
 // Copy is derived from what each project actually is. No invented metrics, users or revenue.
@@ -60,6 +62,7 @@ export const projects: Project[] = [
     tech: ["n8n", "Ollama", "Agentic workflows", "Prompt engineering"],
     result: "Multi-step agentic orchestration that runs without hand-holding.",
     visual: "research-agent",
+    status: "workflow",
   },
   {
     id: "invoice-pipeline",
@@ -73,6 +76,7 @@ export const projects: Project[] = [
     result: "A production-shaped document pipeline built from n8n and an LLM API.",
     highlight: "document pipeline",
     visual: "invoice-pipeline",
+    status: "workflow",
   },
   {
     id: "billzy",
@@ -90,6 +94,7 @@ export const projects: Project[] = [
       "deployed, and in real use by small businesses.",
     ],
     visual: "dashboard-zoom",
+    status: "live",
     image: "/projects/billzy.png",
   },
   {
@@ -106,6 +111,7 @@ export const projects: Project[] = [
       "500+ catalogued and curated, from data model to daily upkeep, solo.",
     ],
     visual: "brand-specimen",
+    status: "live",
     image: "/projects/kiro.png",
   },
 ];
@@ -168,6 +174,14 @@ export const about = {
     "Shashank Joshi is a full-stack developer based in Ahmedabad, India. He builds with Next.js, TypeScript, Supabase and Prisma, and automates with n8n, Ollama and the Groq API. He ships web products and AI automations for small businesses, including Billzy, a GST invoicing and inventory app for retail shops, and KIRO, a directory of 500+ AI tools.",
   statement:
     "I'm a full-stack developer who treats AI as a material, not a buzzword. I design the interface, build the backend, and wire in the automation — so a small team can run like a big one.",
+  // Small inline capsules set right after these words (matched without trailing punctuation).
+  // Decorative: the sentence reads the same without them.
+  capsules: {
+    AI: { glyph: "spark" },
+    buzzword: { image: "/capsules/kiro.webp" },
+    interface: { image: "/capsules/billzy.webp" },
+    automation: { glyph: "nodes" },
+  } as Record<string, { glyph?: "spark" | "nodes"; image?: string }>,
   // Grouped by what the tool is for, not by how often it appears on a CV.
   // Each cluster is set as display lines, broken by hand so every line fits at full weight
   // without wrapping (the weight scrubs, so a line must never re-wrap mid-scroll).
@@ -197,6 +211,27 @@ export const about = {
     },
   ],
 };
+
+// Question headings with 30-75 word direct answers, shown on the page and mirrored in FAQPage
+// JSON-LD, so search snippets and AI assistants can quote them as written.
+export const faq = [
+  {
+    q: "Who is Shashank Joshi?",
+    a: "Shashank Joshi is a full-stack developer and AI generalist based in Ahmedabad, India. He designs and builds web products with Next.js, TypeScript, Supabase and Prisma, and automates routine work with n8n, Ollama and the Groq API. He works with small businesses, studios and teams that need software that ships.",
+  },
+  {
+    q: "What can Shashank build for my business?",
+    a: "Web apps, dashboards and internal tools, plus AI automations that run on their own. Past work includes Billzy, a deployed GST invoicing and inventory app for retail shops, and an n8n and Groq pipeline that extracts data from invoices and files it to Google Drive without a database.",
+  },
+  {
+    q: "Which technologies does Shashank use?",
+    a: "Interface work uses Next.js, TypeScript and Tailwind CSS. Systems use Supabase, Prisma, Socket.io and the MERN stack. AI and automation use n8n, Ollama, the Groq API, agentic workflows and prompt engineering. Motion is built with GSAP, Framer Motion and Lenis.",
+  },
+  {
+    q: "Is Shashank available for freelance or full-time work?",
+    a: "Yes. He is open to selected freelance and contract projects, and to hiring conversations. The quickest way to start is an email describing what you need and your timeline. He is based in Ahmedabad and works on India Standard Time, UTC+5:30.",
+  },
+];
 
 export const currently = {
   building: "Billzy",
