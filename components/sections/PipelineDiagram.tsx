@@ -34,20 +34,26 @@ function Node({
   /** Labels sit in the lower band, leaving the upper half of the box free for what travels through. */
   low?: boolean;
   /** Makes the node focusable/hoverable; used by the invoice pipeline. */
-  inspect?: { label: string; onOn: () => void; onOff: () => void };
+  inspect?: { label: string; pressed: boolean; onOn: () => void; onOff: () => void };
 }) {
   const interactive = inspect
     ? {
         role: "button" as const,
         tabIndex: 0,
         "aria-label": `${inspect.label}. ${sub}`,
+        "aria-pressed": inspect.pressed,
         style: { cursor: "pointer" },
         onPointerEnter: (e: React.PointerEvent) => e.pointerType === "mouse" && inspect.onOn(),
         onPointerLeave: (e: React.PointerEvent) => e.pointerType === "mouse" && inspect.onOff(),
         onFocus: inspect.onOn,
         onBlur: inspect.onOff,
         onClick: inspect.onOn,
-        onKeyDown: (e: React.KeyboardEvent) => (e.key === "Enter" || e.key === " ") && inspect.onOn(),
+        onKeyDown: (e: React.KeyboardEvent) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault(); // Space would otherwise scroll the page
+            inspect.onOn();
+          }
+        },
       }
     : {};
   return (
@@ -378,7 +384,7 @@ function InvoiceStack({
   pick,
 }: {
   shown: number;
-  pick: (i: number) => { label: string; onOn: () => void; onOff: () => void };
+  pick: (i: number) => { label: string; pressed: boolean; onOn: () => void; onOff: () => void };
 }) {
   const nodes = [
     ["Drive", "invoice in"],
@@ -594,6 +600,7 @@ export function InvoiceDiagram({ stage }: { stage: number }) {
   const info = invoiceStages[shown];
   const inspect = (i: number) => ({
     label: `${invoiceStages[i].phase}: ${invoiceStages[i].title}`,
+    pressed: i === shown,
     onOn: () => setPicked(i),
     onOff: () => setPicked((p) => (p === i ? null : p)),
   });
