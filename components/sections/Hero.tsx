@@ -107,6 +107,51 @@ export function Hero() {
         gsap.set(".hero-role [data-inner]", { yPercent: 115 });
         gsap.set(".hero-p .sweep", { "--k": 0 });
 
+        // ---- no layout shift while the letters inflate ----
+        // Each mask is as wide as its glyph, so as the weight/width tween ran every letter pushed all
+        // the ones after it sideways (and the first frame collapsed them all from 700/96 to 200/75):
+        // ~30 reflows, a CLS of 0.13-0.24. Instead each mask is pinned at its final (REST) width, and
+        // the sideways slide the neighbours used to get from the reflow is applied as a transform
+        // worked out from the live glyph widths. Every frame lands where the reflow put it; only the
+        // layout stays still. Released when the entrance ends, where the two agree (the masks are back
+        // to their natural width). The pin has to exist before the first START render below.
+        const masks = chars.map((c) => c.parentElement as HTMLElement);
+        const lines = [".hero-l1", ".hero-l2"].map((sel) => masks.filter((m) => m.closest(sel)));
+        const lockLayout = () => {
+          gsap.set(chars, { "--wght": REST.w, "--wdth": REST.d }); // measure at the width they settle at
+          const fs = parseFloat(getComputedStyle(name).fontSize);
+          const widths = masks.map((m) => m.getBoundingClientRect().width);
+          // a glyph may overshoot its slot a little (back.out; ~8px at 1440); it used to widen the mask
+          // instead. visible-x with clip-y keeps the vertical reveal; without `clip` support, leave it
+          const overshoot = CSS.supports("overflow-y", "clip");
+          masks.forEach((m, i) => {
+            m.style.width = `${(widths[i] / fs).toFixed(4)}em`; // em: stays right if the fit changes the size
+            if (overshoot) {
+              m.style.overflowX = "visible";
+              m.style.overflowY = "clip";
+            }
+          });
+        };
+        const slideLetters = () => {
+          const shifts = lines.map((line) => {
+            let sum = 0;
+            return line.map((m) => {
+              const at = sum;
+              sum += (m.firstElementChild as HTMLElement).getBoundingClientRect().width - m.getBoundingClientRect().width;
+              return at;
+            });
+          });
+          lines.forEach((line, l) => line.forEach((m, i) => (m.style.translate = `${shifts[l][i]}px`)));
+        };
+        const unlockLayout = () =>
+          masks.forEach((m) => {
+            m.style.width = "";
+            m.style.overflowX = "";
+            m.style.overflowY = "";
+            m.style.translate = "";
+          });
+        lockLayout();
+
         const tl = gsap.timeline({ paused: true, defaults: { ease: "power4.out" } });
         tl.fromTo(
           chars,
@@ -126,17 +171,41 @@ export function Hero() {
           .to(fade, { y: 0, opacity: 1, duration: 1 }, 1.1)
           .to(".hero-p .sweep", { "--k": 1, duration: 0.9, ease: "power3.inOut" }, 1.7);
 
+        tl.eventCallback("onUpdate", slideLetters);
+
+        // the font can still arrive after this point; re-measure the slots before the entrance starts
+        let started = false;
+        let cancelled = false;
+        void document.fonts?.ready.then(() => {
+          if (cancelled || started) return;
+          unlockLayout();
+          lockLayout();
+          gsap.set(chars, { "--wght": START.w, "--wdth": START.d });
+          slideLetters();
+        });
+
         let entered = false;
         let onEntered = () => {};
         tl.eventCallback("onComplete", () => {
+          unlockLayout();
           entered = true;
           // per-glyph will-change would keep each letter a 1x bitmap; the exit needs live vectors
           gsap.set(chars, { willChange: "auto" });
           onEntered();
         });
-        const off = onReady(() => tl.play());
+        const off = onReady(() => {
+          started = true;
+          tl.play();
+        });
 
-        const cleanups: Array<() => void> = [off, () => tl.kill()];
+        const cleanups: Array<() => void> = [
+          off,
+          () => {
+            cancelled = true;
+            tl.kill();
+            unlockLayout();
+          },
+        ];
 
         // ---- depth parallax: cursor moves the grid, orb and name at different rates, so the orb
         // reads as sitting in real space behind the letters rather than pasted flat on top of them.
