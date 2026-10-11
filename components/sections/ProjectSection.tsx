@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { gsap, useGSAP, ScrollTrigger, MOTION_OK } from "@/lib/gsap";
+import { gsap, ScrollTrigger, useGSAPIdle, MOTION_OK } from "@/lib/gsap";
 import type { Project } from "@/lib/content";
 import { SplitReveal } from "../SplitReveal";
 import { SelectionSweep } from "../SelectionSweep";
@@ -128,7 +128,7 @@ export function ProjectSection({
 
   const prevNumber = String(index).padStart(2, "0");
 
-  useGSAP(
+  useGSAPIdle(
     () => {
       const mm = gsap.matchMedia();
 

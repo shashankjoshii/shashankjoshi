@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import Image from "next/image";
-import { gsap, useGSAP, ScrollTrigger, MOTION_OK } from "@/lib/gsap";
+import { gsap, ScrollTrigger, useGSAPIdle, MOTION_OK } from "@/lib/gsap";
 import { about } from "@/lib/content";
 import { Glyph } from "../glyphs/Glyph";
 
@@ -43,7 +43,7 @@ function Capsule({ glyph, image }: { glyph?: "spark" | "nodes"; image?: string }
 export function About() {
   const root = useRef<HTMLElement>(null);
 
-  useGSAP(
+  useGSAPIdle(
     () => {
       const mm = gsap.matchMedia();
       mm.add(MOTION_OK, () => {

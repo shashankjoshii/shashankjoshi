@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { gsap, useGSAP, MOTION_OK } from "@/lib/gsap";
+import { gsap, useGSAPIdle, MOTION_OK } from "@/lib/gsap";
 import { process } from "@/lib/content";
 import { SplitReveal } from "../SplitReveal";
 
@@ -27,7 +27,7 @@ const NARROW = "(max-width: 1023px), (pointer: coarse)";
 export function Process() {
   const root = useRef<HTMLElement>(null);
 
-  useGSAP(
+  useGSAPIdle(
     () => {
       const mm = gsap.matchMedia();
 

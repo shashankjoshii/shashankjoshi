@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { gsap, ScrollTrigger, useGSAP, MOTION_OK } from "@/lib/gsap";
+import { gsap, ScrollTrigger, useGSAPIdle, MOTION_OK } from "@/lib/gsap";
 import { contact, site } from "@/lib/content";
 import { Magnetic } from "../Magnetic";
 import { useScrollTo } from "../SmoothScroll";
@@ -53,7 +53,7 @@ export function Contact() {
   const root = useRef<HTMLElement>(null);
   const scrollTo = useScrollTo();
 
-  useGSAP(
+  useGSAPIdle(
     () => {
       const mm = gsap.matchMedia();
       mm.add(MOTION_OK, () => {

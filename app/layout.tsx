@@ -58,8 +58,8 @@ export const viewport: Viewport = {
 
 // The display face is a 197 KB variable font that usually lands just after first paint. Painting the
 // fallback first and swapping re-sets every glyph, so the hero name and nav jump (CLS 0.15 on desktop).
-// Instead the page content stays invisible (the intro curtain does not: it is outside main/header)
-// until the font is ready. Layout still happens, it just isn't painted, so nothing visible moves.
+// Instead the name and nav stay invisible (see "Font gate" in globals.css) until the font is ready.
+// Layout still happens, it just isn't painted, so nothing visible moves.
 // The 1.5 s timer means a slow or failed font can never hold the page back; without JS the class is
 // never added, so content shows normally.
 const FONT_GATE = `(function(){var d=document.documentElement,f=document.fonts;if(!f)return;d.classList.add("fonts-pending");var done=function(){d.classList.remove("fonts-pending")};setTimeout(done,1500);document.addEventListener("DOMContentLoaded",function(){void document.body.offsetHeight;f.ready.then(done)})})();`;

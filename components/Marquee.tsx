@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { gsap, ScrollTrigger, useGSAP, MOTION_OK } from "@/lib/gsap";
+import { gsap, ScrollTrigger, useGSAP, useGSAPIdle, MOTION_OK } from "@/lib/gsap";
 import { Glyph, type GlyphName } from "./glyphs/Glyph";
 
 const WORDS = ["Products that ship", "Automations that run", "Agents that reason", "Interfaces that move"];
@@ -32,7 +32,7 @@ function Row() {
 export function Marquee() {
   const root = useRef<HTMLDivElement>(null);
 
-  useGSAP(
+  useGSAPIdle(
     () => {
       const mm = gsap.matchMedia();
       mm.add(MOTION_OK, () => {

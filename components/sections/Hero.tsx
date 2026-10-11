@@ -65,7 +65,9 @@ export function Hero() {
         // layout each frame (most of the page's blocking time on a mid-range phone). The name's weight
         // still moves, live, once it has landed: the pointer field and the scroll exit below.
         if (!skipIntro) {
-          gsap.set(fade, { y: 24, opacity: 0 });
+          // the positioning line is the LCP element on phones, so it is never hidden (no opacity: 0):
+          // the server-rendered text is what gets painted, and it only rises into place
+          gsap.set(fade, { y: 24 });
           gsap.set(".hero-line", { scaleX: 0 });
           gsap.set(".hero-role [data-inner]", { yPercent: 115 });
           gsap.set(".hero-p .sweep", { "--k": 0 });
@@ -74,8 +76,7 @@ export function Hero() {
         const tl = gsap.timeline({ paused: true, defaults: { ease: "power4.out" } });
         if (!skipIntro) {
           tl.to(chars, { yPercent: 0, duration: 1, stagger: 0.035 }, 0)
-            // the positioning line is the largest text block on phones (the LCP element): early
-            .to(fade, { y: 0, opacity: 1, duration: 0.8 }, 0.3)
+            .to(fade, { y: 0, duration: 0.8 }, 0.3)
             .to(".hero-line", { scaleX: 1, duration: 1, ease: "expo.inOut" }, 0.3)
             .to(".hero-role [data-inner]", { yPercent: 0, duration: 0.8, stagger: 0.04 }, 0.45)
             .to(".hero-p .sweep", { "--k": 1, duration: 0.7, ease: "power3.inOut" }, 0.9);
